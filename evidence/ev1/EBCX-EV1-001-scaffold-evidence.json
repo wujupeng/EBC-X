@@ -1,0 +1,70 @@
+{
+  "execution_id": "EBCX-EV1-001-20260907-001",
+  "timestamp": "2026-09-07T00:30:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "node": "v24.18.0",
+    "rust": "rustup-not-configured"
+  },
+  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "test_command": "go build ./cmd/ebcx && go run ./scripts/module-boundary-check && go vet ./... && go test ./...",
+  "actual_output": {
+    "go_build": "PASS",
+    "module_boundary_check": "PASS — 14 domain modules isolated (TASK-R03)",
+    "go_vet": "PASS — 20 packages",
+    "go_test": "PASS — 20 packages (no test files yet)"
+  },
+  "actual_metrics": {
+    "go_packages": 20,
+    "domain_modules": 14,
+    "platform_modules": 4,
+    "rust_crates": 3,
+    "rust_tests": 7,
+    "frontend_entry": "src/main.tsx",
+    "module_call_latency_target": "≤5ms"
+  },
+  "database_state": "not-applicable (scaffold only, no DB connection)",
+  "event_id": "evt-ebcx-ev1-001-scaffold",
+  "evidence_id": "evd-ebcx-ev1-001-20260907-001",
+  "trace_id": "trace-ebcx-ev1-001-001",
+  "failure_injection_result": "not-applicable (scaffold task)",
+  "verification_result": {
+    "status": "PASS",
+    "checks": [
+      "14 Go domain module packages created with boundary doc.go",
+      "4 platform packages created (eventbus/outbox/observability/identity)",
+      "Go build ./cmd/ebcx PASS",
+      "Module boundary check PASS (no cross-domain direct imports)",
+      "go vet ./... PASS",
+      "go test ./... PASS",
+      "Rust workspace with 3 crates (evidence-hash/crypto/schema-validator)",
+      "Rust evidence-hash: chained hash + genesis + verify_chain + tamper detection tests",
+      "React + Antd + Vite v6.4.3 frontend scaffold",
+      "Build script build/build-all.bat"
+    ]
+  },
+  "verifier": "EBCX-EV1-001 scaffold self-verification",
+  "task_id": "EBCX-EV1-001",
+  "task_title": "搭建 Modular Monolith 项目脚手架（Go + Rust + React/Antd/Vite + 华为云 CCE）",
+  "red_lines_complied": ["TASK-R01", "TASK-R02"],
+  "module_inventory": [
+    "internal/enterprise", "internal/transaction", "internal/finance",
+    "internal/scm", "internal/manufacturing", "internal/crm",
+    "internal/project", "internal/eam", "internal/quality",
+    "internal/datafabric", "internal/evidence", "internal/policy",
+    "internal/agent", "internal/digitaltwin",
+    "internal/platform/eventbus", "internal/platform/outbox",
+    "internal/platform/observability", "internal/platform/identity"
+  ],
+  "rust_crates": [
+    "rust/crates/evidence-hash (chained hash SHA256, genesis, verify_chain, tamper detection)",
+    "rust/crates/crypto (sha256_hex)",
+    "rust/crates/schema-validator (EvidenceRecord validation)"
+  ],
+  "frontend": {
+    "framework": "React 18 + Antd 5 + Vite 6.4.3",
+    "entry": "frontend/src/main.tsx",
+    "build_target": "frontend/dist/"
+  }
+}

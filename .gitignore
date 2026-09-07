@@ -31,3 +31,11 @@ vendor/
 # Logs
 *.log
 logs/
+
+# Neo4j server (downloaded binary, not source code)
+tools/neo4j-community-5.26.0/
+tools/neo4j-community.zip
+tools/*.ps1
+
+# Embedded postgres runtime
+.embedded-postgres-go/

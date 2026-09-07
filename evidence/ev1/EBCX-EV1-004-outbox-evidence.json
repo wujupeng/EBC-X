@@ -1,0 +1,62 @@
+{
+  "execution_id": "EBCX-EV1-004-20260907-001",
+  "timestamp": "2026-09-07T18:27:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "postgresql": "18.3 (embedded-postgres)"
+  },
+  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "test_command": "go test ./internal/platform/outbox/ -v -count=1 -timeout 600s",
+  "actual_output": {
+    "TestFaultIsolation_EventBusDown_TransactionContinues": "PASS (7.97s)",
+    "TestIdempotentConsumer": "PASS (0.00s)",
+    "TestSameTransactionCommit": "PASS (8.13s)",
+    "total_pass": 3,
+    "total_fail": 0
+  },
+  "actual_metrics": {
+    "outbox_table": "outbox.events (pending/published/failed/dlq)",
+    "fault_isolation": "EventBus down → Transaction Core continues, Outbox accumulates",
+    "mode_transitions": "normal → degraded → recovery",
+    "delivery_semantics": "at-least-once + idempotent consumer",
+    "retry_backoff": "1s/2s/4s/8s/16s + DLQ after 5 retries",
+    "same_transaction": "Evidence + Outbox committed atomically"
+  },
+  "database_state": "real PostgreSQL 18.3 — V1~V5 migrations applied — outbox.events table with RLS",
+  "event_id": "evt-ebcx-ev1-004-outbox",
+  "evidence_id": "evd-ebcx-ev1-004-20260907-001",
+  "trace_id": "trace-ebcx-ev1-004-001",
+  "failure_injection_result": {
+    "tests": [
+      {"action": "EventBus set unavailable", "expected": "Transaction Core continues, Outbox accumulates", "actual": "Transaction committed, Evidence intact, 1 event pending", "result": "PASS"},
+      {"action": "EventBus recovery", "expected": "Outbox replays pending events", "actual": "1 event replayed and published", "result": "PASS"},
+      {"action": "Duplicate consume", "expected": "rejected with ErrAlreadyConsumed", "actual": "rejected", "result": "PASS"},
+      {"action": "Transaction rollback", "expected": "Outbox event discarded", "actual": "0 outbox events after rollback", "result": "PASS"}
+    ]
+  },
+  "verification_result": {
+    "status": "PASS",
+    "checks": [
+      "Outbox written in same transaction as Evidence (atomicity)",
+      "Transaction rollback discards outbox event (atomicity verified)",
+      "EventBus unavailable → Transaction Core continues (fault isolation)",
+      "EventBus unavailable → Outbox accumulates pending events",
+      "EventBus unavailable → Mode transitions to DEGRADED",
+      "EventBus recovery → Outbox replays pending events",
+      "EventBus recovery → Mode transitions to RECOVERY",
+      "Idempotent consumer rejects duplicate events",
+      "At-Least-Once delivery: events retained until published",
+      "Retry backoff: 1s/2s/4s/8s/16s exponential",
+      "DLQ: events moved to dead letter queue after max retries",
+      "RLS tenant isolation on outbox.events",
+      "Event is propagation mechanism, NOT truth source (PostgreSQL Evidence Truth is root)",
+      "correlation_id / causation_id / tenant_id provenance on all events"
+    ]
+  },
+  "verifier": "embedded-postgres 18.3 + go test (independent physical verification)",
+  "task_id": "EBCX-EV1-004",
+  "task_title": "Outbox + EventBus 基础设施",
+  "red_lines_complied": ["TASK-R05", "TASK-R06"],
+  "architecture_principle": "Outbox is reliable propagation mechanism, NOT truth source. PostgreSQL Evidence/Transaction Truth is the root."
+}

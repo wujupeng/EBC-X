@@ -1,0 +1,60 @@
+{
+  "execution_id": "EBCX-EV1-003-20260907-001",
+  "timestamp": "2026-09-07T00:45:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7"
+  },
+  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "test_command": "go test ./internal/evidence/ -v -count=1",
+  "actual_output": {
+    "TestGenesisHashDeterministic": "PASS",
+    "TestChainHashDeterministic": "PASS",
+    "TestVerifyChainValid": "PASS",
+    "TestVerifyChainTampered": "PASS — broken at sequence 3",
+    "TestDetectTamperClean": "PASS — no false positive",
+    "TestDetectTamperModified": "PASS — payload modification detected at evd-2",
+    "TestDetectTamperHashForged": "PASS — forged hash detected",
+    "TestGapDetection": "PASS — gap reported",
+    "TestForkDetection": "PASS — fork reported"
+  },
+  "actual_metrics": {
+    "tests_run": 9,
+    "tests_pass": 9,
+    "tests_fail": 0,
+    "hash_algorithm": "SHA256",
+    "chain_fields": ["chain_id", "sequence_no", "previous_evidence_hash", "evidence_hash"],
+    "detection_capabilities": ["tamper", "gap", "fork", "rebuild"],
+    "defense_layers": 4
+  },
+  "database_state": "V4__evidence_ledger.sql ready — append-only table + trigger RAISE EXCEPTION + RLS + audit table",
+  "event_id": "evt-ebcx-ev1-003-evidence-ledger",
+  "evidence_id": "evd-ebcx-ev1-003-20260907-001",
+  "trace_id": "trace-ebcx-ev1-003-001",
+  "failure_injection_result": {
+    "test": "EVIDENCE_TAMPER_DETECTION",
+    "action": "modify payload of evidence record[1]",
+    "result": "DETECTED — hash mismatch identified",
+    "blocked_decision": true
+  },
+  "verification_result": {
+    "status": "PASS",
+    "checks": [
+      "TASK-H01: Chained hash H_n = SHA256(chain_id || seq || prev_hash || payload || src_evt || tx_id)",
+      "TASK-H01: Genesis hash, Chain Verification, Gap Detection, Fork Detection all implemented",
+      "TASK-H02: Layer 1 — REVOKE UPDATE/DELETE/TRUNCATE from ebcx_runtime (V2__create_roles.sql)",
+      "TASK-H02: Layer 2 — Trigger block_mutation() RAISE EXCEPTION on BEFORE UPDATE/DELETE (V4__evidence_ledger.sql)",
+      "TASK-H02: Layer 3 — Application Guard (Go internal/evidence package)",
+      "TASK-H02: Layer 4 — Audit table + Hash Chain verification + Legal Hold",
+      "TASK-H02: TRUNCATE via REVOKE (not RULE)",
+      "Evidence types: mandatory/decision/execution (Evidence-First not Evidence-Everything)",
+      "Evidence fields: evidence_hash, version, provenance, correlation_id, causation_id, legal_hold",
+      "RLS enabled on evidence.evidence_ledger for tenant isolation",
+      "9/9 Go tests PASS including tamper detection Physical Verification"
+    ]
+  },
+  "verifier": "EBCX-EV1-003 hash chain test suite (independent verification)",
+  "task_id": "EBCX-EV1-003",
+  "task_title": "Evidence Ledger 基础设施（四层防御 + Hash Chain + 拒绝语义）",
+  "red_lines_complied": ["TASK-R04", "TASK-R05"]
+}

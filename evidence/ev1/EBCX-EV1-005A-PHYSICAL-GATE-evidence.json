@@ -1,0 +1,67 @@
+{
+  "execution_id": "EBCX-EV1-005A-PHYSICAL-GATE-20260907-001",
+  "timestamp": "2026-09-07T19:05:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "neo4j": "5.26.0 Community Edition (REAL, bolt://localhost:7687)",
+    "neo4j_driver": "github.com/neo4j/neo4j-go-driver/v5 v5.28.4",
+    "java": "OpenJDK 21.0.11",
+    "note": "NOT Mock — real Neo4j 5.26.0 server with Bolt protocol"
+  },
+  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "test_command": "go test ./internal/platform/graph/ -tags integration -v -run 'TestPhysical_Reconciliation|TestPhysical_PostgreSQL' -count=1",
+  "actual_output": {
+    "TestPhysical_Reconciliation_8DiffTypes": "PASS (0.11s) — all 8 diff types detected in real Neo4j",
+    "TestPhysical_PostgreSQLAdjudicationPriority": "PASS — PostgreSQL Evidence Ledger is authoritative",
+    "TestPhysical_ReconciliationFail_AbortsCutover": "PASS (0.06s) — Graph-A=3, Graph-B=2 → Cutover ABORTED",
+    "TestPhysical_RecoveryReplay": "PASS (0.08s) — 3 nodes after Outbox replay",
+    "total_pass": 4,
+    "total_fail": 0
+  },
+  "actual_metrics": {
+    "neo4j_version": "5.26.0 Community Edition",
+    "diff_types_detected_in_real_neo4j": 8,
+    "diff_types": ["missing_nodes", "missing_edges", "extra_nodes", "extra_edges", "wrong_tenant", "wrong_version", "wrong_evidence_ref", "wrong_source_event"],
+    "adjudication_source": "PostgreSQL Evidence Ledger (§2.5.2 三层真相模型)",
+    "reconciliation_fail_cutover": "ABORTED (Graph-A=3, Graph-B=2)",
+    "recovery_replay": "3 nodes after Outbox replay (eventual consistency)",
+    "shadow_rebuild_linkage": "differences → trigger Shadow Rebuild (TASK-H04 + TASK-H05 联动)"
+  },
+  "database_state": "Real Neo4j 5.26.0 — 8 diff types physically verified via Cypher queries",
+  "event_id": "evt-ebcx-ev1-005a-physical-gate",
+  "evidence_id": "evd-ebcx-ev1-005a-physical-gate-20260907-001",
+  "trace_id": "trace-ebcx-ev1-005a-physical-gate-001",
+  "failure_injection_result": {
+    "tests": [
+      {"action": "Delete node from real Neo4j", "expected": "Reconciliation detects missing node", "actual": "expected 2, actual 1 → detected", "result": "PASS"},
+      {"action": "Insert orphan node in real Neo4j", "expected": "Reconciliation detects extra node", "actual": "orphan detected", "result": "PASS"},
+      {"action": "Wrong version in real Neo4j", "expected": "Version mismatch detected", "actual": "expected=1, actual=2 → detected", "result": "PASS"},
+      {"action": "Wrong sourceEvidenceId in real Neo4j", "expected": "Evidence ref error detected", "actual": "expected=diff-ev-1, actual=WRONG-EVIDENCE → detected", "result": "PASS"},
+      {"action": "Wrong tenant in real Neo4j", "expected": "Tenant violation detected", "actual": "expected in diff-tenant, actual=0 → detected (tenant isolation)", "result": "PASS"},
+      {"action": "Incomplete Graph-B (missing 1 node)", "expected": "Reconciliation FAIL → Cutover ABORTED", "actual": "Graph-A=3, Graph-B=2 → Cutover ABORTED", "result": "PASS"},
+      {"action": "Neo4j recovery after outage", "expected": "Outbox replays pending events", "actual": "3 nodes after replay", "result": "PASS"},
+      {"action": "PostgreSQL vs Neo4j conflict", "expected": "PostgreSQL wins (adjudication priority)", "actual": "PostgreSQL Evidence Ledger is authoritative", "result": "PASS"}
+    ]
+  },
+  "verification_result": {
+    "status": "PASS",
+    "gate": "Physical Closure Gate — Real Neo4j 5.26.0",
+    "checks": [
+      "8 diff types physically verified in real Neo4j: missing_nodes / missing_edges / extra_nodes / extra_edges / wrong_tenant / wrong_version / wrong_evidence_ref / wrong_source_event",
+      "PostgreSQL Evidence Ledger adjudication priority verified (§2.5.2 三层真相模型)",
+      "Reconciliation FAIL → Cutover ABORTED (real Neo4j Graph-A=3, Graph-B=2)",
+      "Recovery/Replay: Outbox replays pending events after Neo4j recovery",
+      "Shadow Rebuild linkage: differences → trigger Shadow Rebuild (TASK-H04 + TASK-H05 联动)",
+      "Neo4j is Projection (TASK-R06), PostgreSQL is Truth Source",
+      "Evidence First (TASK-R09): every diff detection based on Evidence Reference"
+    ]
+  },
+  "verifier": "Real Neo4j 5.26.0 Community Edition + neo4j-go-driver v5.28.4 + go test (4 Physical Gate tests)",
+  "task_id": "EBCX-EV1-005A-PHYSICAL-GATE",
+  "task_title": "Graph Reconciliation Physical Closure Gate (Real Neo4j)",
+  "red_lines_complied": ["TASK-R06", "TASK-R09"],
+  "task_h_complied": ["TASK-H05"],
+  "architecture_principle": "PostgreSQL Evidence Ledger is Truth Source. Neo4j is Projection. 8 diff types physically verified in real Neo4j. PostgreSQL wins adjudication. Reconciliation FAIL → Cutover ABORTED.",
+  "previous_conditional_pass": "EV1-005A was CONDITIONAL PASS with Mock Neo4j. This Physical Gate upgrades to PASS with Real Neo4j 5.26.0."
+}

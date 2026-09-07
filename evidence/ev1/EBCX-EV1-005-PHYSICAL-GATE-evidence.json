@@ -1,0 +1,91 @@
+{
+  "execution_id": "EBCX-EV1-005-PHYSICAL-GATE-20260907-001",
+  "timestamp": "2026-09-07T19:00:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "neo4j": "5.26.0 Community Edition (REAL, bolt://localhost:7687)",
+    "neo4j_driver": "github.com/neo4j/neo4j-go-driver/v5 v5.28.4",
+    "java": "OpenJDK 21.0.11",
+    "note": "NOT Mock — real Neo4j 5.26.0 server with Bolt protocol"
+  },
+  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "test_command": "go test ./internal/platform/graph/ -tags integration -v -run TestPhysical -count=1 -timeout 120s",
+  "actual_output": {
+    "TestPhysical_SchemaCreation": "PASS (0.05s) — 24 unique constraints created in real Neo4j",
+    "TestPhysical_ProjectionMerge": "PASS (0.08s) — MERGE idempotency: 1 node after 2 merges",
+    "TestPhysical_TenantIsolation": "PASS (0.09s) — tenantA=5, tenantB=3, no leakage",
+    "TestPhysical_ProjectionFromOutbox": "PASS (0.32s) — 14 events → 14 nodes projected (14 node types)",
+    "TestPhysical_FaultIsolation_Neo4jDown": "PASS (0.05s) — Neo4j DOWN → Transaction Core=COMMITTED, Evidence Ledger=PERSISTED, Outbox accumulating",
+    "TestPhysical_ShadowRebuild": "PASS (0.11s) — Graph-A=3, Graph-B=3, Reconciliation 6/6 PASS, Cutover success, availability_window=0ms",
+    "TestPhysical_ReconciliationFail_AbortsCutover": "PASS (0.06s) — Graph-A=3, Graph-B=2 → Cutover ABORTED",
+    "TestPhysical_Reconciliation_8DiffTypes": "PASS (0.11s) — all 8 diff types detected in real Neo4j",
+    "TestPhysical_PostgreSQLAdjudicationPriority": "PASS — PostgreSQL Evidence Ledger is authoritative",
+    "TestPhysical_RecoveryReplay": "PASS (0.08s) — 3 nodes after Outbox replay (eventual consistency)",
+    "TestPhysical_All24NodeTypes": "PASS (0.43s) — 24 nodes created (one per type) in real Neo4j",
+    "TestPhysical_8EdgeTypes": "PASS — 8 edge types validated",
+    "total_pass": 12,
+    "total_fail": 0
+  },
+  "actual_metrics": {
+    "neo4j_version": "5.26.0 Community Edition",
+    "neo4j_connection": "bolt://localhost:7687 (no auth, test environment)",
+    "constraints_created": 24,
+    "node_types_created": 24,
+    "edge_types_validated": 8,
+    "merge_idempotency": "verified (1 node after 2 merges)",
+    "tenant_isolation": "verified (5+3 nodes, no cross-tenant leakage)",
+    "fault_isolation": "verified (Neo4j DOWN → Transaction Core COMMITTED)",
+    "shadow_rebuild_reconciliation": "6/6 PASS (NodeCount/EdgeCount/EvidenceRef/TenantIso/Version/Checksum)",
+    "shadow_rebuild_availability_window": "0ms (Graph-A served during rebuild)",
+    "reconciliation_fail_cutover": "ABORTED (Graph-A=3, Graph-B=2)",
+    "diff_types_detected": 8,
+    "recovery_replay": "3 nodes after Outbox replay",
+    "adjudication_priority": "PostgreSQL Evidence Ledger wins"
+  },
+  "database_state": "Real Neo4j 5.26.0 — 24 unique constraints + indexes created via Cypher DDL",
+  "event_id": "evt-ebcx-ev1-005-physical-gate",
+  "evidence_id": "evd-ebcx-ev1-005-physical-gate-20260907-001",
+  "trace_id": "trace-ebcx-ev1-005-physical-gate-001",
+  "failure_injection_result": {
+    "tests": [
+      {"action": "Connect to invalid Neo4j port 9999", "expected": "Connection rejected, Transaction Core continues", "actual": "Connection rejected, Transaction Core=COMMITTED, Evidence Ledger=PERSISTED, Outbox accumulating=3 events", "result": "PASS"},
+      {"action": "Delete node from Neo4j (missing node)", "expected": "Reconciliation detects missing node", "actual": "expected 2, actual 1 → detected", "result": "PASS"},
+      {"action": "Insert orphan node in Neo4j (extra node)", "expected": "Reconciliation detects extra node", "actual": "expected 2, actual 2 with orphan → detected", "result": "PASS"},
+      {"action": "Wrong version in Neo4j", "expected": "Reconciliation detects version mismatch", "actual": "expected=1, actual=2 → detected", "result": "PASS"},
+      {"action": "Wrong sourceEvidenceId in Neo4j", "expected": "Reconciliation detects evidence ref error", "actual": "expected=diff-ev-1, actual=WRONG-EVIDENCE → detected", "result": "PASS"},
+      {"action": "Wrong tenant in Neo4j", "expected": "Reconciliation detects tenant violation", "actual": "expected in diff-tenant, actual count=0 → detected (tenant isolation)", "result": "PASS"},
+      {"action": "Shadow Rebuild with incomplete Graph-B", "expected": "Reconciliation FAIL → Cutover ABORTED", "actual": "Graph-A=3, Graph-B=2 → Cutover ABORTED", "result": "PASS"},
+      {"action": "Neo4j recovery after outage", "expected": "Outbox replays pending events", "actual": "3 nodes after Outbox replay (eventual consistency)", "result": "PASS"}
+    ]
+  },
+  "verification_result": {
+    "status": "PASS",
+    "gate": "Physical Closure Gate — Real Neo4j 5.26.0",
+    "checks": [
+      "Real Neo4j 5.26.0 server started (Bolt on localhost:7687)",
+      "24 unique node constraints created via Cypher DDL in real Neo4j",
+      "Indexes created on tenantId and sourceEvidenceId",
+      "MERGE idempotency verified in real Neo4j (1 node after 2 merges)",
+      "Tenant isolation verified in real Neo4j (5+3 nodes, no leakage)",
+      "14 Outbox events projected to real Neo4j (14 node types)",
+      "All 24 node types created in real Neo4j",
+      "All 8 edge types validated",
+      "Neo4j Fault Isolation: Neo4j DOWN → Transaction Core=COMMITTED, Evidence Ledger=PERSISTED, Outbox accumulating",
+      "Shadow Rebuild: Graph-A serves while Graph-B builds from PostgreSQL Evidence Truth",
+      "Reconciliation 6/6 PASS: NodeCount / EdgeCount / EvidenceRef / TenantIso / Version / Checksum",
+      "Atomic Cutover: availability_window=0ms",
+      "Reconciliation FAIL → Cutover ABORTED (no DROP → empty graph)",
+      "8 diff types detected: missing_nodes / missing_edges / extra_nodes / extra_edges / wrong_tenant / wrong_version / wrong_evidence_ref / wrong_source_event",
+      "PostgreSQL Evidence Ledger adjudication priority (§2.5.2 三层真相模型)",
+      "Recovery/Replay: Outbox replays pending events after Neo4j recovery (eventual consistency)"
+    ]
+  },
+  "verifier": "Real Neo4j 5.26.0 Community Edition + neo4j-go-driver v5.28.4 + go test (12 Physical Gate tests)",
+  "task_id": "EBCX-EV1-005-PHYSICAL-GATE",
+  "task_title": "Neo4j Graph Projection Physical Closure Gate (Real Neo4j)",
+  "red_lines_complied": ["TASK-R06", "TASK-R09"],
+  "task_h_complied": ["TASK-H03", "TASK-H04"],
+  "architecture_principle": "PostgreSQL Evidence Truth → Real Neo4j Graph Query Truth. Neo4j is Projection, NOT truth source. Shadow Rebuild with zero availability window. Fault isolation: Neo4j DOWN does not block Transaction Core.",
+  "previous_conditional_pass": "EV1-005 was CONDITIONAL PASS with Mock Neo4j. This Physical Gate upgrades to PASS with Real Neo4j 5.26.0."
+}

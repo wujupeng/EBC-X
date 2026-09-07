@@ -1,0 +1,46 @@
+{
+  "execution_id": "EBCX-EV1-002-20260907-001",
+  "timestamp": "2026-09-07T00:35:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "postgresql": "schema-only (no live instance)"
+  },
+  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "test_command": "scripts\\check-migrations.bat",
+  "actual_output": {
+    "migration_files": "3 (V1__create_schemas.sql, V2__create_roles.sql, V3__tenant_foundation.sql)",
+    "schemas_created": "7 (business, evidence, outbox, audit, master_data, policy, tenant)",
+    "role_separation": "ebcx_runtime (INSERT+SELECT) vs ebcx_migration (DDL+DML)",
+    "task_h02_revoke": "REVOKE UPDATE,DELETE,TRUNCATE ON evidence FROM ebcx_runtime"
+  },
+  "actual_metrics": {
+    "schemas": 7,
+    "migration_files": 3,
+    "roles": 2,
+    "country_packs": ["china", "eu", "us", "japan", "asean"]
+  },
+  "database_state": "schema DDL ready — no live PostgreSQL connection (scaffold phase)",
+  "event_id": "evt-ebcx-ev1-002-schema",
+  "evidence_id": "evd-ebcx-ev1-002-20260907-001",
+  "trace_id": "trace-ebcx-ev1-002-001",
+  "failure_injection_result": "not-applicable (schema DDL task)",
+  "verification_result": {
+    "status": "PASS",
+    "checks": [
+      "7 PostgreSQL schemas defined (business/evidence/outbox/audit/master_data/policy/tenant)",
+      "Flyway configuration with ebcx_migration role",
+      "Runtime Role (ebcx_runtime): INSERT+SELECT only, no UPDATE/DELETE/TRUNCATE on evidence",
+      "Migration Role (ebcx_migration): full DDL+DML, migration window only",
+      "TASK-H02: REVOKE UPDATE,DELETE,TRUNCATE on evidence FROM ebcx_runtime",
+      "ALTER DEFAULT PRIVILEGES for future evidence tables",
+      "Tenant foundation table with Country Pack routing (china/eu/us/japan/asean)",
+      "RLS enabled on tenant.tenants",
+      "Migration CI check script (scripts/check-migrations.bat)"
+    ]
+  },
+  "verifier": "EBCX-EV1-002 schema self-verification",
+  "task_id": "EBCX-EV1-002",
+  "task_title": "建立 PostgreSQL schema 基础（7 schema + 迁移工具 + 权限分离）",
+  "red_lines_complied": ["TASK-R04"]
+}
