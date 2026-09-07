@@ -2,10 +2,11 @@
 
 > **项目：EBC-X — Enterprise Business & Industrial Operating System（企业与工业智能运营操作系统）**
 > **阶段：EV0 — Architecture & Policy Alignment → 编码任务规划（tasks.md）**
-> **文档版本：v1.0（首版，基于 spec.md v1.1 + design.md v1.1 冻结基线生成）**
-> **状态：🟡 TASKS v1.0（待大G项目经理体系 EV0-TASKS Gate 复审）**
-> **需求基线：`.codeartsdoer/specs/ebcx_ev0_arch/spec.md` v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN，不可变基线）**
-> **设计基线：`.codeartsdoer/specs/ebcx_ev0_arch/design.md` v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN，不可变基线）**
+> **文档版本：v1.1（执行 EBCX-EV0-TASKS-HARDENING-001 Task Hardening 修订）**
+> **状态：🟡 TASKS v1.1（Task Hardening 完成，待大G项目经理体系 EV0-TASKS Gate 复审）**
+> **上一版本：v1.0（CONDITIONAL PASS，裁决不退回重做，不推翻骨架，仅要求 Task Hardening）**
+> **需求基线：`.codeartsdoer/specs/ebcx_ev0_arch/spec.md` v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN，不可变基线，本修订不得修改）**
+> **设计基线：`.codeartsdoer/specs/ebcx_ev0_arch/design.md` v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN，不可变基线，本修订不得修改）**
 > **产品/架构总设计：大G项目经理体系**
 > **核心工程化：华为云团队**
 > **全球交付与产品主权：HTKIS**
@@ -23,9 +24,45 @@
 - ❌ 禁止修改 design.md v1.1（已冻结）
 - ❌ 禁止在 Tasks 阶段重新发明架构（TASK-R01）
 - ❌ 禁止把 14 Modules 拆成大量微服务（TASK-R02）
-- ✅ 只允许 Design → Implementation Tasks 转化，严格遵循 10 条施工红线（TASK-R01~R10）
+- ✅ 只允许 tasks.md v1.0 → Task Hardening → tasks.md v1.1，补齐 TASK-H01~H10 + 2 项附加修订，严格遵循 10 条施工红线（TASK-R01~R10）
 
 **覆盖范围**：EV1~EV12 全部阶段任务，重点细化 EV1 Enterprise Core 与 EV2 Transaction Core（第一阶段可执行任务），EV3~EV12 为里程碑级任务。
+
+---
+
+## Task Hardening 修订声明（v1.0 → v1.1）
+
+> **修订依据**：大G项目经理体系对 tasks.md v1.0 完成 EV0-TASKS Gate 审查，裁决为 🟡 CONDITIONAL PASS，不退回重做，不推翻 tasks.md 骨架，仅要求执行 TASK HARDENING-001，补齐 TASK-H01~H10 + 2 项附加修订后重新提交 tasks.md v1.1。
+>
+> **硬约束**：
+> - ❌ 禁止修改 EV0-SPEC v1.1（spec.md 已冻结）
+> - ❌ 禁止修改 EV0-DESIGN v1.1（design.md 已冻结）
+> - ❌ 禁止推翻 tasks.md 骨架（骨架是对的）
+> - ❌ 禁止重新设计架构 / 授权编码 / 进入编码执行阶段
+> - ✅ 只允许 tasks.md v1.0 → TASK HARDENING-001 → tasks.md v1.1，补齐 TASK-H01~H10 + 2 项附加修订
+>
+> **已认可的正确骨架（Hardening 不得削弱）**：
+> 1. ✅ Modular Monolith → Evidence Ledger → Outbox → EventBus → Neo4j Projection
+> 2. ✅ Transaction → Saga → Policy → Approval → Authorization → Execution → Independent Verification → Evidence
+> 3. ✅ 13 Capability → 14 Module → 6 Bounded Context → 24 Entity → Cross-cutting Platform
+> 4. ✅ Agent Runtime 设计（不能自签发 Execution Token / 不能自验证 / 不能绕过 Policy / 不能跨租户 / Execution Token 短期有效 / Idempotency / Independent Verifier）
+>
+> **TASK-H 修订清单**：
+>
+> | TASK-H | 主题 | 严重度 | 落实位置 |
+> |---|---|---|---|
+> | TASK-H01 | Evidence Hash Chain 真正实现链式哈希 | 🔴 必须补 | EBCX-EV1-003 |
+> | TASK-H02 | Evidence Ledger UPDATE/DELETE/TRUNCATE 数据库拒绝语义重新定义 | 🔴 必须补 | EBCX-EV1-003 |
+> | TASK-H03 | Outbox Normal Mode ≤3s 与 Retry/Recovery 收敛目标分离 | 🔴 必须补 | EBCX-EV1-004、EBCX-EV1-005 |
+> | TASK-H04 | Neo4j Rebuild 改为 Shadow Rebuild + Reconciliation + Cutover | 🔴 必须补 | EBCX-EV1-005 |
+> | TASK-H05 | Graph Truth ↔ Neo4j Projection Reconciliation | 🔴 必须补 | EBCX-EV1-005A（新增） |
+> | TASK-H06 | B1 Target 与 Measured Baseline 强制分离 | 🔴 必须补 | EBCX-EV1-016、EBCX-EV1-023 |
+> | TASK-H07 | Physical Evidence 统一最小字段标准 | 🔴 必须补 | 全局（新增 §十一章节） |
+> | TASK-H08 | EV2-001~004 允许并行开发，解除不必要串行依赖 | 🟡 必须修正 | EBCX-EV2-001~004 |
+> | TASK-H09 | Policy Engine 与 Neo4j 故障隔离 / Fail-Closed 行为明确 | 🔴 必须补 | EBCX-EV2-010 |
+> | TASK-H10 | EV3~EV12 标记为 Milestone Placeholder，不得直接进入编码 | 🟠 必须澄清 | §三 EV3~EV12 章节 |
+> | 附加修订1 | Evidence 三类分类（避免 Evidence-Everything 过度设计） | 🟠 必须补 | EBCX-EV2-005 |
+> | 附加修订2 | DAG 并行度优化（EV1 内部） | 🟢 建议 | §任务依赖 DAG |
 
 ---
 
@@ -51,37 +88,72 @@
 
 ## 任务依赖 DAG（高层视图）
 
+> **附加修订2（DAG 并行度优化）**：EV1 内部调整为更高并行度，EV2-001~004 解除不必要串行依赖（TASK-H08），缩短 Critical Path。
+
 ```text
-EV1 Enterprise Core（基础设施 + 聚合根）
+EV1 Enterprise Core（基础设施 + 聚合根，高并行 DAG）
   ├─ EBCX-EV1-001 项目脚手架
   ├─ EBCX-EV1-002 PostgreSQL schema 基础
-  ├─ EBCX-EV1-003 Evidence Ledger 基础设施（D-GATE-01 四层防御）  ← TASK-R04 从第一批代码起
-  ├─ EBCX-EV1-004 Outbox + EventBus 基础设施
-  ├─ EBCX-EV1-005 Neo4j Graph Projection 基础设施（TASK-R06 Projection）
+  ├─ EBCX-EV1-003 Evidence Ledger 基础设施（D-GATE-01 四层防御 + TASK-H01 Hash Chain + TASK-H02 拒绝语义）  ← TASK-R04 从第一批代码起
+  ├─ EBCX-EV1-004 Outbox + EventBus 基础设施（TASK-H03 Normal/Retry 分离）
+  ├─ EBCX-EV1-005 Neo4j Graph Projection 基础设施（TASK-R06 Projection + TASK-H03 模式分级 + TASK-H04 Shadow Rebuild）
+  ├─ EBCX-EV1-005A Graph Truth ↔ Neo4j Projection Reconciliation（TASK-H05 新增）🔴
   ├─ EBCX-EV1-006 Object Storage Artifact 基础设施
   ├─ EBCX-EV1-007 HTKIS-AF 安全基座（OAuth2+JWT+RLS+审计）
   ├─ EBCX-EV1-008 多租户基础（RLS + Pack 路由）
   ├─ EBCX-EV1-009~013 Enterprise/Organization/Person/MasterData/Permission 聚合根
   ├─ EBCX-EV1-014 24 Entity Graph Schema + Node/Edge Contract（D-GATE-06）
   ├─ EBCX-EV1-015 Observability 基础
-  ├─ EBCX-EV1-016 Benchmark Harness 框架（TASK-R08 B1 Profile）
+  ├─ EBCX-EV1-016 Benchmark Harness 框架（TASK-R08 B1 Profile + TASK-H06 Target/Measured 分离）
   ├─ EBCX-EV1-017 REST API /api/v1/rel/* 第一入口
   ├─ EBCX-EV1-018 GraphQL 适配层
   ├─ EBCX-EV1-019 Event Contract + Schema Registry
   ├─ EBCX-EV1-020 CQRS Command/Query 分离基础
   ├─ EBCX-EV1-021 DevSecOps CI/CD 流水线
   ├─ EBCX-EV1-022 IaC 基础设施（Terraform + 华为云）
-  ├─ EBCX-EV1-023 B1 Benchmark 首次执行 + Measured Baseline
+  ├─ EBCX-EV1-023 B1 Benchmark 首次执行 + Measured Baseline（TASK-H06 Harness Ready vs 实测达标）
   └─ EBCX-EV1-024 EV1 Gate 评审准备
+
+  EV1 内部并行 DAG（附加修订2）：
+    EV1-001 Scaffold
+           ↓
+    EV1-002 DB Foundation
+           ↓
+    EV1-003 Evidence Ledger
+           ↓
+    EV1-004 Outbox
+
+    EV1-003
+     ├── EV1-006 Object Storage
+     ├── EV1-007 Security
+     └── EV1-008 Tenant
+
+    EV1-004
+     ├── EV1-005 Graph Projection
+     └── EV1-019 Event Contract
+
+    EV1-005
+     ├── EV1-005A Graph Reconciliation（新增）
+     └── EV1-014 Graph Contract
+
+    EV1-007
+     └── EV1-017 REST
+
+    EV1-017
+     └── EV1-018 GraphQL
+
+    EV1-004 + EV1-017
+     └── EV1-020 CQRS
+
         ↓（解锁 EV2）
 EV2 Transaction Core（聚合根 + Orchestrator + 治理）
-  ├─ EBCX-EV2-001~004 Order/Contract/Invoice/Payment 聚合根
-  ├─ EBCX-EV2-005 Transaction Orchestrator 11 阶段编排（D-GATE-02）
+  ├─ EBCX-EV2-001~004 Order/Contract/Invoice/Payment 聚合根（TASK-H08 并行开发，解除串行依赖）
+  ├─ EBCX-EV2-005 Transaction Orchestrator 11 阶段编排（D-GATE-02 + 附加修订1 Evidence 三类分类）
   ├─ EBCX-EV2-006 Saga/Workflow 跨服务编排 + Compensation
   ├─ EBCX-EV2-007 Domain Event 契约 + Schema Registry
   ├─ EBCX-EV2-008 CQRS Read Model 投影
   ├─ EBCX-EV2-009 Evidence Provenance & Data Lineage
-  ├─ EBCX-EV2-010 Policy Engine 基础
+  ├─ EBCX-EV2-010 Policy Engine 基础（TASK-H09 Neo4j 故障隔离 / Fail-Closed）
   ├─ EBCX-EV2-011 Approval 聚合根（一等公民）
   ├─ EBCX-EV2-012 Agent Runtime 基础（三重治理）
   ├─ EBCX-EV2-013 Agent Execution Authorization 模型（D-GATE-07）
@@ -89,8 +161,19 @@ EV2 Transaction Core（聚合根 + Orchestrator + 治理）
   ├─ EBCX-EV2-015 B2~B5 Profile 预留框架
   ├─ EBCX-EV2-016 B1 Benchmark 执行 + Measured Baseline
   └─ EBCX-EV2-017 EV2 Gate 评审准备
-        ↓（解锁 EV3~EV12，里程碑级）
-EV3~EV12 里程碑级任务（10 个）
+
+  EV2-001~004 并行 DAG（TASK-H08）：
+    EV1 Foundation
+           ↓
+     ┌─────┼─────┬─────┐
+     ↓     ↓     ↓     ↓
+    Order Contract Invoice Payment  （并行实现，共享已冻结 Domain Event 契约）
+     └─────┼─────┴─────┘
+           ↓
+    Orchestrator (EV2-005)  （四者完成后编排）
+
+        ↓（解锁 EV3~EV12，里程碑级，TASK-H10）
+EV3~EV12 里程碑级任务（10 个，Milestone Gate Placeholder，不得直接进入编码）
         ↓
 集成测试 / 部署配置 / 评审验证 任务组
         ↓
@@ -142,39 +225,101 @@ EV0-TASKS Gate 评审
 - **依赖任务**：EBCX-EV1-001
 - **遵守红线**：TASK-R04（Evidence Ledger 从第一批代码起）
 
-### EBCX-EV1-003：实现 Evidence Ledger 基础设施（append-only + 四层纵深防御 + RLS + Runtime Role）🔴 关键
+### EBCX-EV1-003：实现 Evidence Ledger 基础设施（append-only + 四层纵深防御 + RLS + Runtime Role + Hash Chain）🔴 关键
 - **关联 spec.md**：§4.2 规则 2（不可篡改）、§5.4.1 规则 2/3（append-only + 审计）、§6.1（数据约束）、§5.7.1 规则 2/4（RLS + 审计不可篡改）
 - **关联 design.md**：D05 Evidence Ledger、D-GATE-01（Evidence Ledger 不可篡改安全边界四层纵深防御）
+- **TASK-H 修订**：TASK-H01（Evidence Hash Chain 真正实现链式哈希）+ TASK-H02（UPDATE/DELETE/TRUNCATE 数据库拒绝语义重新定义）
 - **实现内容**：
-  - **第一层（DB 权限模型）**：创建 `ebcx_runtime_role`（仅 `INSERT + SELECT ON evidence.*`，`REVOKE UPDATE, DELETE, TRUNCATE`）+ `ebcx_migration_role`（DDL + DML，仅迁移窗口期）+ `ebcx_audit_role`（仅 INSERT + SELECT on audit.*）+ DB Owner（不用于运行时）
-  - **第二层（DB 触发器/RULE）**：`CREATE RULE evidence_no_update AS ON UPDATE TO evidence.evidence_ledger DO INSTEAD NOTHING;` + 同 ON DELETE + 同 ON TRUNCATE
-  - **第三层（应用层校验）**：Repository 层禁止 emit UPDATE/DELETE 语句，代码评审 lint 规则
-  - **第四层（纵深）**：审计表 `evidence.evidence_audit`（append-only，记录所有 evidence 表访问）+ legal_hold 字段 + 定期 hash 链校验 job
-  - **Evidence 必含字段**：evidence_id / evidence_type / payload / evidence_hash（SHA-256 of payload+source_event_id+transaction_id）/ source_event_id / transaction_id / tenant_id / created_at / created_by / version / provenance（JSONB）/ correlation_id / causation_id / legal_hold
+  - **第一层（DB 权限模型，TASK-H02 第一防线）**：创建 `ebcx_runtime_role`（仅 `INSERT + SELECT ON evidence.*`，`REVOKE UPDATE, DELETE, TRUNCATE`）+ `ebcx_migration_role`（DDL + DML，仅迁移窗口期）+ `ebcx_audit_role`（仅 INSERT + SELECT on audit.*）+ DB Owner（不用于运行时）
+    - **TASK-H02 关键语义**：`REVOKE UPDATE, DELETE, TRUNCATE` 是第一道真正的安全边界——数据库**明确拒绝操作并产生 ERROR**，而非"静默不执行"。`DO INSTEAD NOTHING` 语义是"不执行这个动作"，**不等于**"数据库明确拒绝操作并产生错误"。权限 REVOKE 才是第一防线。
+    - **TRUNCATE 特殊处理（TASK-H02）**：TRUNCATE 不能当成普通 UPDATE/DELETE Rule 处理。正确思路是权限 REVOKE（Runtime Role 根本不能执行 TRUNCATE），而非 RULE。
+  - **第二层（DB 触发器，TASK-H02 第二防线，对已通过权限边界的异常路径阻断）**：
+    - `BEFORE UPDATE ON evidence.evidence_ledger → RAISE EXCEPTION 'EBCX-EVIDENCE-IMMUTABLE-UPDATE-REJECTED'` + 写审计
+    - `BEFORE DELETE ON evidence.evidence_ledger → RAISE EXCEPTION 'EBCX-EVIDENCE-IMMUTABLE-DELETE-REJECTED'` + 写审计
+    - **TASK-H02 关键语义**：触发器 `RAISE EXCEPTION` 产生明确错误并审计，而非 `DO INSTEAD NOTHING` 静默吞掉。这是对已通过权限边界的异常路径（如 superuser 误操作）的阻断。
+  - **第三层（应用层校验，TASK-H02 第三防线）**：Repository 层禁止 emit UPDATE/DELETE 语句，代码评审 lint 规则
+  - **第四层（纵深，TASK-H02 第四防线）**：审计表 `evidence.evidence_audit`（append-only，记录所有 evidence 表访问 + 拒绝尝试）+ legal_hold 字段 + **定期 Hash Chain 校验 job（TASK-H01）**
+  - **Evidence 必含字段（D-GATE-01 扩展 + TASK-H01 Hash Chain 字段）**：evidence_id / evidence_type / payload / evidence_hash / **previous_evidence_hash（TASK-H01 新增）** / **sequence_no（TASK-H01 新增）** / **chain_id（TASK-H01 新增）** / source_event_id / transaction_id / tenant_id / created_at / created_by / version / provenance（JSONB）/ correlation_id / causation_id / legal_hold
+  - **TASK-H01 Hash Chain 真正链式哈希实现（锁定）**：
+    - **Genesis Evidence**：`H0 = SHA256(genesis)`，chain_id 创建，sequence_no = 0
+    - **链式哈希计算（每条 Evidence 包含前一条的 hash）**：
+      ```
+      H1 = SHA256(
+          chain_id ||
+          sequence_no ||
+          previous_evidence_hash(H0) ||
+          payload ||
+          source_event_id ||
+          transaction_id
+      )
+
+      H2 = SHA256(
+          chain_id ||
+          sequence_no ||
+          previous_evidence_hash(H1) ||
+          payload ||
+          source_event_id ||
+          transaction_id
+      )
+      ```
+    - **关键原则**：每条 Evidence 的 evidence_hash 包含前一条 Evidence 的 hash，形成真正的链。攻击者修改某条 Evidence 时，必须重新计算自己及之后所有 Evidence 的 hash，否则 Chain Verification 检测到断裂。
+    - **Chain Verification 能力（TASK-H01）**：验证整条链连续性，从 Genesis 开始逐条校验 `evidence_hash == SHA256(chain_id || sequence_no || previous_evidence_hash || payload || source_event_id || transaction_id)`
+    - **Gap Detection（TASK-H01）**：检测 sequence_no 缺失（如 1,2,4 缺 3）
+    - **Fork Detection（TASK-H01）**：检测分叉（同一 chain_id 出现两个不同 previous_evidence_hash 指向同一 sequence_no）
+    - **Rebuild Detection（TASK-H01）**：检测重建尝试（chain_id 重新生成或 sequence_no 重置）
   - **修改语义**：修改 = 新版本 Evidence（correlation_id + causation_id 串联）；删除 = tombstone Evidence（物理保留）
-  - **hash 链校验**：每日 job 校验 `evidence_hash = SHA256(payload || source_event_id || transaction_id)`，不匹配则告警 + 审计 + 阻断决策
+  - **Hash Chain 校验 job（TASK-H01）**：每日 job 执行 Chain Verification + Gap Detection + Fork Detection + Rebuild Detection，发现异常则告警 + 审计 + 阻断依赖该 Evidence 的决策
   - **RLS 策略**：`CREATE POLICY evidence_tenant_isolation ON evidence.evidence_ledger USING (tenant_id = current_setting('app.tenant_id')::uuid);`
 - **验收标准**：
-  - [ ] Runtime Role 尝试 UPDATE/DELETE/TRUNCATE evidence 表被数据库拒绝（Physical Verification：执行 SQL 验证返回权限错误）
-  - [ ] DB 触发器/RULE 拒绝 UPDATE/DELETE 并写入审计
+  - [ ] Runtime Role 尝试 UPDATE/DELETE/TRUNCATE evidence 表被数据库**明确拒绝并产生 ERROR**（TASK-H02 Physical Verification：执行 SQL 验证返回权限错误 `ERROR: permission denied`，而非静默成功）
+  - [ ] DB 触发器 `RAISE EXCEPTION` 拒绝 UPDATE/DELETE 并写入审计（TASK-H02：产生明确错误码 `EBCX-EVIDENCE-IMMUTABLE-UPDATE-REJECTED`，而非 `DO INSTEAD NOTHING` 静默吞掉）
   - [ ] 应用层 Repository 无 UPDATE/DELETE 语句（lint 通过）
-  - [ ] hash 链校验 job 检测到篡改时告警 + 审计 + 阻断
+  - [ ] **TASK-H01 Hash Chain 校验**：
+    - [ ] Genesis Evidence 创建成功，chain_id + sequence_no = 0
+    - [ ] 链式哈希计算正确：H1 包含 H0，H2 包含 H1，依此类推
+    - [ ] Chain Verification 通过：整条链连续性校验成功
+    - [ ] **篡改检测 Physical Verification**：写入 Evidence 1 → Evidence 2 → Evidence 3，篡改 Evidence 2 的 payload → Chain Verification → ❌ FAIL → 告警 → Audit Evidence → 阻断依赖该 Evidence 的决策
+    - [ ] Gap Detection：删除中间一条 Evidence（模拟 sequence_no 缺失）→ 检测到 Gap → 告警
+    - [ ] Fork Detection：构造分叉（同一 chain_id 两个不同 previous_evidence_hash 指向同一 sequence_no）→ 检测到 Fork → 告警
+    - [ ] Rebuild Detection：模拟 chain_id 重新生成 → 检测到 Rebuild 尝试 → 告警
   - [ ] legal_hold = TRUE 时 retention job 不得清理
   - [ ] 修改语义验证：写入新版本 Evidence 后原 Evidence 保留不动
   - [ ] RLS 跨租户访问被拦截并审计
   - [ ] Evidence 写入吞吐 ≥5000 EPS（基准测试）
-- **Evidence 产出**：`evidence/ev1/EBCX-EV1-003-evidence-ledger-evidence.json`（含四层防御校验报告、权限拒绝日志、hash 链校验报告、吞吐基准测试、RLS 拦截日志）
+- **Evidence 产出**：`evidence/ev1/EBCX-EV1-003-evidence-ledger-evidence.json`（含四层防御校验报告、权限拒绝 ERROR 日志、**Hash Chain 校验报告（Chain Verification + Gap/Fork/Rebuild Detection）**、篡改检测 Physical Verification、吞吐基准测试、RLS 拦截日志，符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-002
-- **遵守红线**：TASK-R04（Evidence Ledger 从第一批代码起，四层纵深防御 + Runtime Role 无 UPDATE/DELETE + append-only + hash 链 + correlation_id/causation_id 一并落地）、TASK-R09（Evidence First）
+- **遵守红线**：TASK-R04（Evidence Ledger 从第一批代码起，四层纵深防御 + Runtime Role 无 UPDATE/DELETE + append-only + **Hash Chain（TASK-H01）** + correlation_id/causation_id 一并落地）、TASK-R09（Evidence First）
 
-### EBCX-EV1-004：实现 Outbox + EventBus 基础设施（DMS/Kafka + 至少一次 + 幂等）
+### EBCX-EV1-004：实现 Outbox + EventBus 基础设施（DMS/Kafka + 至少一次 + 幂等 + Normal/Retry 收敛分离）
 - **关联 spec.md**：§4.2 规则 4（Outbox + EventBus 异步投影）、§5.4.2（交互流程）
-- **关联 design.md**：D07 Outbox + EventBus、§2.5.3 Outbox + EventBus 异步投影
+- **关联 design.md**：D07 Outbox + EventBus、§2.5.3 Outbox + EventBus 异步投影、D-GATE-05（模式分级）
+- **TASK-H 修订**：TASK-H03（Normal Mode ≤3s 与 Retry/Recovery 收敛目标分离）
 - **实现内容**：
-  - 创建 `outbox.outbox_events` 表（event_id PK / event_type / event_version / aggregate_id / aggregate_version / tenant_id / trace_id / payload JSONB / evidence_ref / occurred_at / published_at NULL）
+  - 创建 `outbox.outbox_events` 表（event_id PK / event_type / event_version / aggregate_id / aggregate_version / tenant_id / trace_id / payload JSONB / evidence_ref / occurred_at / published_at NULL / retry_count / last_retry_at / dlq_status）
   - 实现 Outbox Publisher（轮询 `published_at IS NULL` 的未投递事件，发布至华为云 DMS Kafka）
   - 实现幂等消费者（基于 event_id 去重，消费者维护已处理 event_id 表）
-  - 实现至少一次投递语义（重投间隔指数退避 1s/2s/4s/8s，最大收敛 3s）
+  - 实现至少一次投递语义
+  - **TASK-H03 关键修订：Normal Mode 与 Retry/Recovery 收敛目标严格分离**
+    - **正常路径（Normal Mode）**：
+      ```
+      Transaction → Outbox → Kafka → Projection
+      目标: projection_lag P95 ≤ 3s（B1 标准环境，无故障）
+      ```
+      这是 B1 标准环境 + Normal Mode 下的 P95 目标，**不是无条件承诺**。
+    - **Retry Path（Degraded/Recovery Mode）**：
+      ```
+      consumer failure / network failure / Neo4j unavailable
+      重投间隔 1s/2s/4s/8s（指数退避）
+      收敛目标: 单独定义，不承诺 P95 ≤3s
+      ```
+      **关键修正**：v1.0 写"重投间隔 1s/2s/4s/8s，最大收敛 3s"逻辑冲突（1s+2s+4s+8s 本身超过 3s）。v1.1 严格分离：Retry Path 收敛目标单独定义，不承诺 P95 ≤3s。
+    - **模式分级（与 D-GATE-05 一致）**：
+      ```
+      Normal Mode:    projection_lag P95 ≤ 3s（B1 标准环境，无故障）
+      Degraded Mode:  lag monitored + 告警阈值 P95 > 3s 持续 1min
+      Recovery Mode:  convergence target 单独定义（重投收敛，不承诺 ≤3s）
+      Rebuild Mode:   RTO ≤ 30min（全量重建，lag 不适用）
+      ```
   - 实现 DLQ（Dead Letter Queue）：重投 N=5 次后仍失败进入 DLQ，DLQ 不阻断 Transaction Core 但阻断对应 Event 的 Graph 投影
   - 集成华为云 DMS（Kafka 兼容），保持可迁移性不产生不可逆厂商锁定
 - **验收标准**：
@@ -182,34 +327,108 @@ EV0-TASKS Gate 评审
   - [ ] 至少一次投递验证：模拟消费者崩溃后恢复，事件不丢失
   - [ ] 幂等消费者验证：重复投递同一 event_id 返回同一结果
   - [ ] DLQ 验证：重投 5 次后进入 DLQ，Transaction Core 不受影响
-  - [ ] 收敛 ≤3s（B1 Normal Mode 基准测试）
-- **Evidence 产出**：`evidence/ev1/EBCX-EV1-004-outbox-evidence.json`（含同事务原子性测试、至少一次投递测试、幂等测试、DLQ 测试、收敛延迟基准报告）
+  - [ ] **TASK-H03 Normal Mode P95 projection_lag ≤3s**（B1 标准环境基准测试，无故障条件）
+  - [ ] **TASK-H03 Retry Path 收敛目标分离验证**：模拟 consumer failure，重投间隔 1s/2s/4s/8s，收敛时间 >3s 但最终一致，不违反 Normal Mode ≤3s 承诺（因为这是 Recovery Mode，不是 Normal Mode）
+  - [ ] **TASK-H03 模式分级验证**：Normal/Degraded/Recovery/Rebuild 四种模式行为正确切换 + 告警
+- **Evidence 产出**：`evidence/ev1/EBCX-EV1-004-outbox-evidence.json`（含同事务原子性测试、至少一次投递测试、幂等测试、DLQ 测试、**Normal Mode ≤3s 基准报告**、**Retry Path 收敛目标分离验证报告**、模式分级测试，符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-003
 - **遵守红线**：TASK-R05（Mutation 进入 Outbox 治理链）、TASK-R09（Evidence First）
 
-### EBCX-EV1-005：实现 Neo4j Graph Projection 基础设施（异步投影 + 重建 + DLQ + 模式分级）🔴 关键
+### EBCX-EV1-005：实现 Neo4j Graph Projection 基础设施（异步投影 + Shadow Rebuild + DLQ + 模式分级）🔴 关键
 - **关联 spec.md**：§4.2 规则 4（Neo4j 失败不拖垮 Transaction Core）、§5.5 Evidence Graph、§5.4.3（异常场景）
 - **关联 design.md**：D06 Evidence Graph Projection、D19 Failure/Recovery Model、D-GATE-05（Graph Projection ≤3s 适用条件与模式分级）
+- **TASK-H 修订**：TASK-H03（模式分级明确）+ TASK-H04（Neo4j Rebuild 改为 Shadow Rebuild + Reconciliation + Cutover）
 - **实现内容**：
   - 创建 Neo4j schema：24 类节点标签 + 8 类边类型 + 索引 on nodeId/tenantId/sourceEvidenceId + 约束 on nodeId 唯一
   - 实现 Graph Projection Consumer：消费 Outbox Event → 转换为 Cypher MERGE 语句 → 异步执行
   - 实现幂等投影（基于 event_id 去重）
-  - 实现重建策略：Neo4j 全量重建 = 清空 → 从 PostgreSQL Evidence Ledger 全量 Event Replay → 重新投影
-  - 实现模式分级：Normal Mode（P95 ≤3s）/ Degraded Mode（lag 监控 + 告警）/ Recovery Mode（重投收敛）/ Rebuild Mode（查询降级至 PG 直查 + 告警）
+  - **TASK-H04 Shadow Rebuild（替代 Destroy-and-Rebuild）**：
+    - **v1.0 问题**：v1.0 写"Neo4j 全量重建 = 清空 → 从 PostgreSQL Evidence Ledger 全量 Event Replay → 重新投影"。Destroy-and-Rebuild 在重建期间产生巨大可用性窗口。
+    - **v1.1 修订（Shadow Rebuild + Reconciliation + Cutover）**：
+      ```
+      PostgreSQL Evidence Truth
+              ↓
+      Rebuild Job
+              ↓
+      New Graph Projection (Graph-B，并行构建，Graph-A 继续服务)
+              ↓
+      Validation
+              ↓
+      Reconciliation（Graph-A vs Graph-B）
+              ↓
+      Atomic Cutover（切换指向，Graph-B 成为主图）
+      ```
+    - **Reconciliation 必须比较**：Node Count / Edge Count / Evidence Reference / Tenant Isolation / Version / Checksum
+    - **PASS 后才 Cutover**，而非 DROP → 空图 → 重建
+    - **重建期间 Graph-A 继续服务**，查询不降级（可用性窗口为零）
+  - **TASK-H03 模式分级（与 D-GATE-05 一致）**：
+    - Normal Mode（P95 ≤3s，B1 标准环境无故障）
+    - Degraded Mode（lag 监控 + 告警阈值 P95 > 3s 持续 1min）
+    - Recovery Mode（重投收敛，收敛目标单独定义，不承诺 ≤3s）
+    - Rebuild Mode（Shadow Rebuild，RTO ≤30min，查询不降级）
   - 实现 6 项关键指标采集：event_lag / projection_lag / consumer_lag / rebuild_duration / failed_projection_count / dlq_count
   - 实现查询降级：Neo4j 故障时 Graph 查询降级至 PostgreSQL 直查 + 告警
   - **禁止业务代码直接把 Neo4j 当 Source of Truth**（Neo4j 只通过 Outbox+EventBus 异步投影写入）
 - **验收标准**：
   - [ ] Neo4j 故障时 Transaction Core 不受影响（Physical Verification：停止 Neo4j，发起交易仍成功）
   - [ ] Outbox Event 积压待 Neo4j 恢复后重投成功
-  - [ ] 全量重建 RTO ≤30min
-  - [ ] Normal Mode P95 projection_lag ≤3s（B1 基准测试）
+  - [ ] **TASK-H04 Shadow Rebuild 验证**：
+    - [ ] Graph-B 并行构建期间 Graph-A 继续服务（查询不降级）
+    - [ ] Reconciliation 比较 Node Count / Edge Count / Evidence Reference / Tenant Isolation / Version / Checksum 全部通过
+    - [ ] Atomic Cutover 切换成功，Graph-B 成为主图
+    - [ ] 重建期间可用性窗口为零（无 DROP → 空图阶段）
+    - [ ] Shadow Rebuild RTO ≤30min
+  - [ ] **TASK-H03 Normal Mode P95 projection_lag ≤3s**（B1 标准环境基准测试）
   - [ ] 6 项指标全部接入华为云 APM/云监控
   - [ ] DLQ 消息标记为 `projection_failed`，不阻断 Transaction
   - [ ] 业务代码无直接 Neo4j 写入（lint 通过，仅 Projection Consumer 写入）
-- **Evidence 产出**：`evidence/ev1/EBCX-EV1-005-graph-projection-evidence.json`（含 Neo4j 故障隔离测试、重建测试、模式分级测试、6 项指标监控截图、lint 报告）
+- **Evidence 产出**：`evidence/ev1/EBCX-EV1-005-graph-projection-evidence.json`（含 Neo4j 故障隔离测试、**Shadow Rebuild + Reconciliation + Cutover 测试**、模式分级测试、6 项指标监控截图、lint 报告，符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-004
 - **遵守红线**：TASK-R06（Neo4j 必须是 Projection，禁止业务代码直接写 Neo4j）、TASK-R09（Evidence First）
+
+### EBCX-EV1-005A：实现 Graph Truth ↔ Neo4j Projection Reconciliation（定期一致性校验）🔴 关键（TASK-H05 新增）
+- **关联 spec.md**：§4.2 规则 4（Neo4j 异步投影最终一致）、§5.5 Evidence Graph、§5.3.1 规则 3（三层真相模型）
+- **关联 design.md**：D06 Evidence Graph Projection、D19 Failure/Recovery Model、§2.5.2 三层真相模型
+- **TASK-H 修订**：TASK-H05（增加 Graph Truth ↔ Neo4j Projection Reconciliation）
+- **实现内容**：
+  - **v1.0 问题**：v1.0 有"业务代码无 Neo4j 写入，仅 Projection Consumer 写入"，方向正确但缺少一致性校验。"Neo4j 投影成功"不能证明"Neo4j 与 Evidence Truth 一致"。
+  - **v1.1 新增 Projection Reconciliation（定期一致性校验）**：
+    ```
+    PostgreSQL Evidence Truth（System of Record）
+           ↓
+    Expected Graph State（从 Evidence Ledger 推导期望图状态）
+           ↓
+    Neo4j Actual Graph（实际投影图状态）
+           ↓
+    Compare（逐项比较）
+           ↓
+    Graph Reconciliation Evidence（校验结果固化为 Evidence）
+    ```
+  - **Reconciliation 至少检测以下差异**：
+    - missing nodes（Evidence Truth 有但 Neo4j 缺失的节点）
+    - missing edges（Evidence Truth 有但 Neo4j 缺失的边）
+    - extra nodes（Neo4j 有但 Evidence Truth 没有的节点，疑似孤儿）
+    - extra edges（Neo4j 有但 Evidence Truth 没有的边，疑似错误投影）
+    - wrong tenant（租户归属错误）
+    - wrong version（版本不一致）
+    - wrong evidence ref（sourceEvidenceId 引用错误）
+    - wrong source event（sourceEvent 引用错误）
+  - **Reconciliation 调度**：定期 job（如每小时）+ 手动触发接口
+  - **Reconciliation 结果**：生成 Graph Reconciliation Evidence（append-only，记录校验时间/范围/差异列表/校验通过与否），差异时告警 + 审计 + 触发 Shadow Rebuild
+  - **裁决优先级**：PostgreSQL→Neo4j 不一致时，以 PostgreSQL Evidence Ledger 为最终事实裁决源（§2.5.2 三层真相模型）
+- **验收标准**：
+  - [ ] Reconciliation 定期 job 可执行
+  - [ ] **missing nodes 检测 Physical Verification**：手动删除 Neo4j 一个节点 → Reconciliation → 检测到 missing node → 告警
+  - [ ] **missing edges 检测**：手动删除 Neo4j 一条边 → Reconciliation → 检测到 missing edge → 告警
+  - [ ] **extra nodes 检测**：手动在 Neo4j 插入孤儿节点 → Reconciliation → 检测到 extra node → 告警
+  - [ ] **extra edges 检测**：手动在 Neo4j 插入错误边 → Reconciliation → 检测到 extra edge → 告警
+  - [ ] **wrong tenant / wrong version / wrong evidence ref / wrong source event 检测**：构造对应差异 → Reconciliation → 检测到 → 告警
+  - [ ] Reconciliation 结果固化为 Graph Reconciliation Evidence（append-only）
+  - [ ] 差异时触发 Shadow Rebuild（与 TASK-H04 联动）
+  - [ ] 裁决优先级验证：PostgreSQL→Neo4j 不一致时以 PostgreSQL 为准
+- **Evidence 产出**：`evidence/ev1/EBCX-EV1-005A-graph-reconciliation-evidence.json`（含 8 类差异检测 Physical Verification、Reconciliation Evidence 样本、Shadow Rebuild 联动测试、裁决优先级验证，符合 TASK-H07 Physical Evidence 最小字段标准）
+- **依赖任务**：EBCX-EV1-005
+- **遵守红线**：TASK-R06（Neo4j Projection 一致性校验）、TASK-R09（Evidence First）
 
 ### EBCX-EV1-006：实现 Object Storage Artifact 基础设施（OBS + WORM + 命名规范）
 - **关联 spec.md**：§5.3.1 规则 3（三层真相模型 Artifact Truth）、§5.4（Artifact Store）
@@ -409,9 +628,10 @@ EV0-TASKS Gate 评审
 - **依赖任务**：EBCX-EV1-005
 - **遵守红线**：TASK-R09（Evidence First）
 
-### EBCX-EV1-016：实现 Benchmark Harness 框架（B1 Profile + Load Generator）🔴 关键
+### EBCX-EV1-016：实现 Benchmark Harness 框架（B1 Profile + Load Generator + Target/Measured 分离）🔴 关键
 - **关联 spec.md**：§4.1 规则 3（Benchmark Profile B1~B5）
 - **关联 design.md**：D21 Benchmark Architecture、D-GATE-04（B1-EBCX-BASELINE Profile 绑定）
+- **TASK-H 修订**：TASK-H06（B1 Target 与 Measured Baseline 强制分离）
 - **实现内容**：
   - 建立 B1-EBCX-BASELINE Profile 框架（Hardware + Workload + Target 绑定）
   - **Hardware 锁定**：16 vCPU / 64 GB RAM / PostgreSQL 8vCPU 32GB NVMe 2TB / Kafka 3 broker 4vCPU 16GB / Redis 4vCPU 16GB / OpenSearch 3 node 4vCPU 16GB / Neo4j 4vCPU 16GB
@@ -420,6 +640,31 @@ EV0-TASKS Gate 评审
   - 实现 Load Generator（Locust 或 k6）
   - 实现 Dataset 生成脚本（1000 万 Order 等）
   - 实现 Scenario 定义（Create Order + validation + tenant RLS + commit + evidence append + audit）
+  - **TASK-H06 关键修订：Target 与 Measured Baseline 强制分离，产出结构化结果**：
+    ```json
+    {
+      "target": {
+        "tps": 2000,
+        "p95_ms": 500,
+        "error_rate": 0.001
+      },
+      "measured": {
+        "tps": "...",
+        "p95_ms": "...",
+        "error_rate": "..."
+      },
+      "hardware": "...",
+      "dataset": "...",
+      "concurrency": 2000,
+      "consistency_mode": "...",
+      "evidence_write_ratio": 1.0
+    }
+    ```
+  - **TASK-H06 关键约束**：
+    - **Target ≠ Measured Baseline**：Target 是目标值，Measured Baseline 是实际测量值，二者必须严格区分，避免"目标值污染测量结果"
+    - **EV1-016（Harness Ready）不要求完成完整 B1 性能测量**：本任务只要求 Harness 框架建好（Load Generator + Dataset + Scenario + Measurement + Report），不要求实际执行 B1 压测
+    - **EV1-023（B1 Actual Execution）才产生 Measured Baseline**：实际压测在 EBCX-EV1-023 执行
+    - **Benchmark Task PASS ≠ B1 实测达标**：必须区分"Harness 建好"与"实测达标"
   - 实现 Measurement + Report（P50/P95/P99/TPS/ErrorRate/Hardware/Workload/ConsistencyMode）
   - 实现 Measured Baseline 路径：`{repo}/benchmarks/baselines/b1/{date}.json`，版本化管理
 - **验收标准**：
@@ -428,7 +673,9 @@ EV0-TASKS Gate 评审
   - [ ] Dataset 生成脚本可生成 1000 万 Order
   - [ ] Measurement + Report 产出完整 JSON 报告
   - [ ] Measured Baseline 版本化纳入 git
-- **Evidence 产出**：`evidence/ev1/EBCX-EV1-016-benchmark-harness-evidence.json`（含 B1 Profile 定义、Load Generator 配置、Dataset 生成日志、框架自检报告）
+  - [ ] **TASK-H06 Target 与 Measured 分离验证**：报告 JSON 中 target 与 measured 字段严格分离，target 为锁定值，measured 为占位符（本任务不实际压测）
+  - [ ] **TASK-H06 Harness Ready ≠ 实测达标**：本任务 PASS 仅证明 Harness 框架建好，不证明 B1 Target 达成
+- **Evidence 产出**：`evidence/ev1/EBCX-EV1-016-benchmark-harness-evidence.json`（含 B1 Profile 定义、Load Generator 配置、Dataset 生成日志、框架自检报告、**Target/Measured 分离结构验证**，符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-001
 - **遵守红线**：TASK-R08（B1 性能指标必须有 Benchmark Harness）
 
@@ -549,21 +796,48 @@ EV0-TASKS Gate 评审
 ### EBCX-EV1-023：执行 B1 Benchmark 首次压测 + 产出 Measured Baseline 🔴 关键
 - **关联 spec.md**：§4.1 规则 3（B1 Profile）
 - **关联 design.md**：D21 Benchmark Architecture、D-GATE-04（B1-EBCX-BASELINE Profile 绑定）
+- **TASK-H 修订**：TASK-H06（B1 Target 与 Measured Baseline 强制分离，明确 Harness Ready vs 实测达标）
 - **实现内容**：
   - 部署 B1-EBCX-BASELINE Hardware（16 vCPU / 64 GB RAM 等）
   - 生成 B1 Workload Dataset（50 租户 / 10000 用户 / 1000 万 Order 等）
   - 执行 B1 Scenario（Create Order + validation + tenant RLS + commit + evidence append + audit）
   - 测量 P50/P95/P99/TPS/ErrorRate
+  - **TASK-H06 产出结构化 Measured Baseline（Target 与 Measured 严格分离）**：
+    ```json
+    {
+      "target": {
+        "tps": 2000,
+        "p95_ms": 500,
+        "error_rate": 0.001
+      },
+      "measured": {
+        "tps": "<actual measured value>",
+        "p95_ms": "<actual measured value>",
+        "error_rate": "<actual measured value>"
+      },
+      "hardware": "16 vCPU / 64 GB RAM / ...",
+      "dataset": "50 tenants / 10000 users / 10M orders / ...",
+      "concurrency": 2000,
+      "consistency_mode": "synchronous replication enabled",
+      "evidence_write_ratio": 1.0,
+      "graph_projection_mode": "async Normal Mode"
+    }
+    ```
   - 产出 Measured Baseline 至 `{repo}/benchmarks/baselines/b1/{date}.json`
   - 验证 B1 Target：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
   - 若未达成，分析瓶颈并优化（不允许降低 B1 Target，必须绑定 B1-EBCX-BASELINE Profile）
+  - **TASK-H06 关键约束**：
+    - **本任务（EV1-023）才是 B1 Actual Execution**，产生真实 Measured Baseline
+    - **EV1-016（Harness Ready）≠ 本任务（Actual Execution）**：EV1-016 只建框架，本任务才实测
+    - **Measured Baseline 中的 measured 字段必须为实际测量值**，不得用 target 值填充
 - **验收标准**：
   - [ ] B1 Hardware + Workload 部署完成
   - [ ] B1 Scenario 执行成功
   - [ ] Measured Baseline 产出并版本化
+  - [ ] **TASK-H06 Target 与 Measured 分离验证**：报告 JSON 中 measured 字段为实际测量值（非 target 值填充）
   - [ ] B1 Target 达成：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
   - [ ] 若未达成，瓶颈分析报告 + 优化措施
-- **Evidence 产出**：`evidence/ev1/EBCX-EV1-023-b1-baseline-evidence.json`（含 B1 压测报告、Measured Baseline JSON、Target 达成验证、瓶颈分析（若有））
+- **Evidence 产出**：`evidence/ev1/EBCX-EV1-023-b1-baseline-evidence.json`（含 B1 压测报告、**结构化 Measured Baseline JSON（target/measured 分离）**、Target 达成验证、瓶颈分析（若有），符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-016、EBCX-EV1-022、EBCX-EV1-009、EBCX-EV1-012
 - **遵守红线**：TASK-R08（B1 必须有 Benchmark Harness）、TASK-R09（Evidence First）、TASK-R10（Digital Engineering 闭环）
 
@@ -598,6 +872,7 @@ EV0-TASKS Gate 评审
 ### EBCX-EV2-001：实现 Order 聚合根
 - **关联 spec.md**：§5.10 EV2、§5.1 第一性原理链路、§6.1（数据约束）
 - **关联 design.md**：D04 Transaction Core（OrderAggregate，金额一致性 + 状态机单调）
+- **TASK-H 修订**：TASK-H08（允许并行开发，解除不必要串行依赖）
 - **实现内容**：
   - 实现 `OrderAggregate`（含 orderId / customerId / items / status / version / sourceEvidenceId / totalAmount）
   - 实现状态机：Draft → Submitted → Approved → Executing → Verified → Completed / Failed → Compensating → Draft
@@ -611,13 +886,14 @@ EV0-TASKS Gate 评审
   - [ ] Evidence + Outbox + Graph 三层写入一致
   - [ ] Event Replay 可重建 Order 状态
   - [ ] Unit Test + Integration Test 通过
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-001-order-evidence.json`
-- **依赖任务**：EBCX-EV1-012（MasterData Customer）、EBCX-EV1-014（Graph Contract）
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-001-order-evidence.json`（符合 TASK-H07 Physical Evidence 最小字段标准）
+- **依赖任务**：EBCX-EV1-012（MasterData Customer）、EBCX-EV1-014（Graph Contract）、EBCX-EV1-019（Event Contract 已冻结，**TASK-H08 并行前提**）
 - **遵守红线**：TASK-R03（聚合根边界）、TASK-R04（Evidence First）、TASK-R05（Mutation 进入治理链）、TASK-R09
 
 ### EBCX-EV2-002：实现 Contract 聚合根
 - **关联 spec.md**：§5.10 EV2、§5.1 第一性原理链路
 - **关联 design.md**：D04 Transaction Core（ContractAggregate）
+- **TASK-H 修订**：TASK-H08（允许并行开发，解除不必要串行依赖）
 - **实现内容**：
   - 实现 `ContractAggregate`（含 contractId / orderId / terms / status / version / sourceEvidenceId）
   - 实现状态机 + 不变式
@@ -627,13 +903,14 @@ EV0-TASKS Gate 评审
   - [ ] 状态机 + 不变式校验通过
   - [ ] Evidence + Outbox + Graph 三层写入一致
   - [ ] Unit Test + Integration Test 通过
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-002-contract-evidence.json`
-- **依赖任务**：EBCX-EV2-001
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-002-contract-evidence.json`（符合 TASK-H07 Physical Evidence 最小字段标准）
+- **依赖任务**：EBCX-EV1-012（MasterData）、EBCX-EV1-014（Graph Contract）、EBCX-EV1-019（Event Contract 已冻结，**TASK-H08 并行前提**）— **不再依赖 EBCX-EV2-001，可与 Order 并行实现**
 - **遵守红线**：TASK-R03、TASK-R04、TASK-R05、TASK-R09
 
 ### EBCX-EV2-003：实现 Invoice 聚合根
 - **关联 spec.md**：§5.10 EV2、§5.1 第一性原理链路
 - **关联 design.md**：D04 Transaction Core（InvoiceAggregate）
+- **TASK-H 修订**：TASK-H08（允许并行开发，解除不必要串行依赖）
 - **实现内容**：
   - 实现 `InvoiceAggregate`（含 invoiceId / orderId / contractId / paymentId / amount / version / sourceEvidenceId）
   - 实现状态机 + 不变式
@@ -643,13 +920,14 @@ EV0-TASKS Gate 评审
   - [ ] 状态机 + 不变式校验通过
   - [ ] Evidence + Outbox + Graph 三层写入一致
   - [ ] Unit Test + Integration Test 通过
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-003-invoice-evidence.json`
-- **依赖任务**：EBCX-EV2-002
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-003-invoice-evidence.json`（符合 TASK-H07 Physical Evidence 最小字段标准）
+- **依赖任务**：EBCX-EV1-012（MasterData）、EBCX-EV1-014（Graph Contract）、EBCX-EV1-019（Event Contract 已冻结，**TASK-H08 并行前提**）— **不再依赖 EBCX-EV2-002，可与 Order/Contract 并行实现**
 - **遵守红线**：TASK-R03、TASK-R04、TASK-R05、TASK-R09
 
 ### EBCX-EV2-004：实现 Payment 聚合根
 - **关联 spec.md**：§5.10 EV2、§5.1 第一性原理链路
 - **关联 design.md**：D04 Transaction Core（PaymentAggregate）
+- **TASK-H 修订**：TASK-H08（允许并行开发，解除不必要串行依赖）
 - **实现内容**：
   - 实现 `PaymentAggregate`（含 paymentId / invoiceId / amount / status / version / sourceEvidenceId）
   - 实现状态机 + 不变式
@@ -659,15 +937,18 @@ EV0-TASKS Gate 评审
   - [ ] 状态机 + 不变式校验通过
   - [ ] Evidence + Outbox + Graph 三层写入一致
   - [ ] Unit Test + Integration Test 通过
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-004-payment-evidence.json`
-- **依赖任务**：EBCX-EV2-003
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-004-payment-evidence.json`（符合 TASK-H07 Physical Evidence 最小字段标准）
+- **依赖任务**：EBCX-EV1-012（MasterData）、EBCX-EV1-014（Graph Contract）、EBCX-EV1-019（Event Contract 已冻结，**TASK-H08 并行前提**）— **不再依赖 EBCX-EV2-003，可与 Order/Contract/Invoice 并行实现**
 - **遵守红线**：TASK-R03、TASK-R04、TASK-R05、TASK-R09
+
+> **TASK-H08 并行开发说明**：v1.0 将 EV2-001~004 完全串行（Order → Contract → Invoice → Payment），形成不必要的 Critical Path。v1.1 解除串行依赖：四个聚合根本身不需要完全串行开发，**前提是共享 Contract（Domain Event 契约，EBCX-EV1-019）已冻结**。四个 Aggregate 可并行实现，Orchestrator（EBCX-EV2-005）在四者完成后编排。
 
 ## 2.2 Orchestrator 与 Saga
 
 ### EBCX-EV2-005：实现 Transaction Orchestrator 11 阶段编排（D-GATE-02）🔴 关键
 - **关联 spec.md**：§5.1.1（第一性原理链路 11 阶段）、§5.1.2（交互流程）
 - **关联 design.md**：D04 Transaction Core、D-GATE-02（Transaction Orchestrator 与 Saga/Workflow 边界）
+- **TASK-H 修订**：附加修订1（Evidence 三类分类，避免 Evidence-Everything 过度设计）
 - **实现内容**：
   - 实现 `TransactionOrchestrator` 编排 11 阶段链路（Mutation 路径）：
     1. Business（加载主数据/权限上下文，同步读）
@@ -684,13 +965,37 @@ EV0-TASKS Gate 评审
   - 实现 Read/Query 路径分流（不强制走完整 11 阶段链路）
   - **关键约束**：Orchestrator 是编排器，不是分布式事务管理器；11 阶段不是单一 ACID 事务
   - 实现 Local ACID + Domain Event + Saga/Workflow + Compensation + Evidence 五层组合
+  - **附加修订1：Evidence 三类分类（避免 Evidence-Everything 过度设计）**：
+    - **v1.0 问题**：v1.0 写"每步骤产生 Evidence"，11 阶段若每阶段机械产生一条 Evidence，会导致 Evidence Ledger 膨胀、TPS 降低、存储成本增加、Graph projection 事件量增加、Benchmark 被 Evidence 写放大拖垮。
+    - **v1.1 修订（Evidence 三类分类）**：
+      ```
+      1. Mandatory Evidence  — 业务事实必须产生（如 Order Created / Contract Signed / Payment Executed）
+      2. Decision Evidence   — Policy / Approval / Agent / Decision 必须产生（如 Policy Evaluated / Approval Granted / Agent Executed）
+      3. Execution Evidence  — Execute / Verify / Closure 必须产生（如 Execution Completed / Verification Passed / Closure Written）
+      ```
+    - **原则（锁定）**：阶段执行 ≠ 必须生成一条独立 Evidence。可以 Stage → Event / Trace → Evidence reference。这是 **Evidence-First，而不是 Evidence-Everything**。
+    - **11 阶段 Evidence 产生规则**：
+      | 阶段 | Evidence 类型 | 是否产生独立 Evidence |
+      |---|---|---|
+      | 1. Business | — | 否（同步读，无状态变更） |
+      | 2. Event | — | 否（入参，无状态变更） |
+      | 3. Transaction | Mandatory | 是（业务事实） |
+      | 4. Data | — | 否（同事务，包含在 Mandatory Evidence 中） |
+      | 5. Evidence | — | 否（本身就是 Evidence 写入） |
+      | 6. Policy | Decision | 是（Policy 裁决事实） |
+      | 7. Decision | Decision | 是（决策事实，可与 Policy 合并） |
+      | 8. Agent | Decision | 是（Agent 治理事实） |
+      | 9. Execution | Execution | 是（执行事实） |
+      | 10. Verification | Execution | 是（验证事实） |
+      | 11. Closure | Mandatory | 是（闭环事实） |
+    - **优化目标**：避免 11 阶段机械产生 11 条 Evidence，合理合并为 5~7 条（Mandatory 2~3 + Decision 2~3 + Execution 2~3），降低 Evidence 写放大，保护 B1 TPS ≥2000。
 - **验收标准**：
   - [ ] 11 阶段链路全部实现且顺序不可变
   - [ ] Read/Query 路径不触发 Agent 环节
   - [ ] Local ACID 事务 P95 ≤500ms
-  - [ ] 每步骤产生 Evidence
+  - [ ] **附加修订1 Evidence 三类分类验证**：11 阶段按上表规则产生 Evidence，非每阶段机械产生一条，Evidence 写放大可控
   - [ ] Unit Test + Integration Test 通过
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-005-orchestrator-evidence.json`
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-005-orchestrator-evidence.json`（含 11 阶段编排测试、Evidence 三类分类验证、写放大基准报告，符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV2-001~004、EBCX-EV1-020
 - **遵守红线**：TASK-R03（聚合根边界）、TASK-R05（Mutation 走完整链路）、TASK-R09、TASK-R10
 
@@ -770,9 +1075,10 @@ EV0-TASKS Gate 评审
 
 ## 2.3 Policy Engine 与 Agent Runtime
 
-### EBCX-EV2-010：实现 Policy Engine 基础
+### EBCX-EV2-010：实现 Policy Engine 基础（含 Neo4j 故障隔离 / Fail-Closed）
 - **关联 spec.md**：§5.5 治理关系、§5.6 Agent 治理、§6.4 Policy 数据约束
-- **关联 design.md**：D10 Policy Engine
+- **关联 design.md**：D10 Policy Engine、D19 Failure/Recovery Model
+- **TASK-H 修订**：TASK-H09（Policy Engine 与 Neo4j 故障隔离 / Fail-Closed 行为明确）
 - **实现内容**：
   - 实现 `PolicyRule` 聚合根（含 policyId / policyType / scope / condition / action / version / effectiveFrom / effectiveTo）
   - 实现 policyType：权限 / 审批 / 计算 / 禁止
@@ -782,14 +1088,39 @@ EV0-TASKS Gate 评审
   - 实现评估流程：Orchestrator → Policy Engine → Neo4j 查询子图 → 规则匹配 → Decision
   - 实现与 Approval 交互（裁决为"转审批"时发起 Approval 流转）
   - 实现版本单调 + 生效区间不重叠
+  - **TASK-H09 Neo4j 故障隔离 / Fail-Closed 行为（锁定）**：
+    - **v1.0 问题**：Policy Engine 查询 Neo4j 子图做规则匹配，存在隐性强耦合。母架构约束明确 Neo4j = Graph Query Projection，Policy Engine 不能变成 Neo4j availability dependent。
+    - **v1.1 修订（故障隔离行为定义）**：
+      ```
+      正常路径：
+      Policy → Required Facts → Graph Query (Neo4j) → 规则匹配 → Decision
+
+      Neo4j 故障路径（优先 fallback）：
+      Policy → Required Facts → Graph Query (Neo4j 失败) → Evidence Truth fallback (PostgreSQL 直查) → 规则匹配 → Decision
+
+      Neo4j 故障路径（Fail-Closed，当 Policy 必须依赖 Graph 且无 fallback）：
+      Graph unavailable → Policy requires Graph → Fail Closed / Human Approval（而非放行）
+      ```
+    - **绝对禁止（锁定）**：
+      ```
+      Neo4j down → Policy Engine down → Transaction Core down
+      ```
+      Policy Engine 不得因 Neo4j 故障而拖垮 Transaction Core（与 D19 故障恢复模型一致）。
+    - **Fail-Closed 原则**：当 Policy 必须依赖 Graph 子图且无 Evidence Truth fallback 时，采用 Fail-Closed（拒绝/转人工审批），**绝不放行**。安全优先于可用性。
+    - **Fallback 原则**：当 Policy 可从 Evidence Truth（PostgreSQL 直查）获取等效事实时，降级至 PostgreSQL 直查，继续规则匹配，告警但不阻断。
 - **验收标准**：
   - [ ] Policy 评估 ≤50ms
   - [ ] 规则版本单调 + 生效区间不重叠校验通过
   - [ ] 与 Approval 交互验证
+  - [ ] **TASK-H09 Neo4j 故障隔离 Physical Verification**：
+    - [ ] 停止 Neo4j → 发起需 Policy 评估的交易 → Policy Engine 不崩溃 → Transaction Core 不受影响
+    - [ ] **Fail-Closed 验证**：停止 Neo4j + Policy 必须依赖 Graph + 无 fallback → Policy 返回 Fail-Closed（拒绝/转人工审批），**绝不放行**
+    - [ ] **Fallback 验证**：停止 Neo4j + Policy 可从 Evidence Truth 获取等效事实 → Policy 降级至 PostgreSQL 直查 → 继续规则匹配 → 告警但不阻断
+    - [ ] **绝对禁止验证**：Neo4j down 时 Transaction Core 仍可处理不需 Policy 的交易（如纯 Read/Query）
   - [ ] Unit Test + Integration Test 通过
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-010-policy-evidence.json`
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-010-policy-evidence.json`（含 Policy 评估测试、**Neo4j 故障隔离 Physical Verification**、Fail-Closed 测试、Fallback 测试、Transaction Core 隔离测试，符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-014、EBCX-EV2-005
-- **遵守红线**：TASK-R07（Agent Execution 经 Policy）、TASK-R09
+- **遵守红线**：TASK-R07（Agent Execution 经 Policy）、TASK-R09（Evidence First）
 
 ### EBCX-EV2-011：实现 Approval 聚合根（Evidence Graph 一等公民）
 - **关联 spec.md**：§5.5.1 规则 1（Approval 一等公民）、§5.5.1 规则 3（审批关系）
@@ -939,11 +1270,37 @@ EV0-TASKS Gate 评审
 
 ---
 
-# 三、EV3~EV12 里程碑级任务
+# 三、EV3~EV12 里程碑级任务（Milestone Gate Placeholder）
 
 > **说明**：EV3~EV12 为里程碑级任务，每个 EV 阶段含进入条件、交付物、验收标准三要素。具体子任务在各 EV 阶段启动时由 spec-task-agent 细化。
 > **关联 spec.md**：§5.10 EV3~EV12 Gate 体系
 > **关联 design.md**：D01~D24 对应模块
+>
+> **TASK-H10 Milestone Placeholder 正式定义（锁定）**：
+>
+> > ⚠️ **EV3~EV12 当前任务仅作为 Milestone Gate Placeholder，不得直接进入编码。**
+>
+> - **进入对应 EV 前必须重新执行**：Requirement → Design → Task 三阶段完整流程
+> - **EV3-001 这类"实现财务系统"等几十人日大任务，必须在进入该 EV 阶段时重新细化，不得直接执行**
+> - **当前 Placeholder 的作用**：仅作为 Gate 体系占位，标识后续 EV 阶段的存在与依赖关系，不作为可执行任务
+> - **禁止项**：
+>   - ❌ 禁止将 EV3~EV12 Placeholder 任务直接作为编码任务执行
+>   - ❌ 禁止跳过对应 EV 的 Requirement → Design → Task 流程
+>   - ❌ 禁止将几十人日大任务（如"实现财务系统"）作为单一任务执行
+> - **正确流程**：
+>   ```
+>   EV2 Gate 通过
+>         ↓
+>   进入 EV3 阶段
+>         ↓
+>   重新执行 Requirement（spec.md EV3 细化）
+>         ↓
+>   重新执行 Design（design.md EV3 细化）
+>         ↓
+>   重新执行 Task（tasks.md EV3 细化，分解为 1~3 人日子任务）
+>         ↓
+>   才可启动 EV3 编码
+>   ```
 
 ### EBCX-EV3-001：EV3 Evidence Core 里程碑（Evidence Graph 完整能力）
 - **关联 spec.md**：§5.10 EV3 Evidence Core、§5.5 Evidence Graph
@@ -1271,7 +1628,24 @@ EV0-TASKS Gate 评审
 | D-GATE-07 | Agent Execution Authorization 模型 | EBCX-EV2-013 | ✅ Agent→Reason→Policy→Approval→Authorize→Execute→Verify→Evidence + Independent Verifier |
 | D-GATE-08 | 13/14/6 五层层级关系 | EBCX-EV1-001 | ✅ 五层层级体系 + 13→14 差异来源明确 |
 
-**一致性校验结论**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening 均被任务覆盖，无遗漏，无矛盾，无漂移。
+## 7.4 TASK-H01~H10 Task Hardening 覆盖校验（v1.1 新增）
+
+| TASK-H | 主题 | 覆盖任务 | 校验结果 |
+|---|---|---|---|---|
+| TASK-H01 | Evidence Hash Chain 真正实现链式哈希 | EBCX-EV1-003 | ✅ 链式哈希（H0→H1→H2，含 previous_evidence_hash）+ Genesis + Chain Verification + Gap/Fork/Rebuild Detection + 篡改检测 Physical Verification |
+| TASK-H02 | Evidence Ledger UPDATE/DELETE/TRUNCATE 拒绝语义重新定义 | EBCX-EV1-003 | ✅ 四层纵深防御（REVOKE 权限拒绝产生 ERROR + 触发器 RAISE EXCEPTION + 应用层 + 审计/Hash Chain），TRUNCATE 用 REVOKE 而非 RULE |
+| TASK-H03 | Outbox Normal Mode ≤3s 与 Retry/Recovery 收敛目标分离 | EBCX-EV1-004、EBCX-EV1-005 | ✅ Normal Mode P95≤3s + Retry Path 收敛目标单独定义 + 模式分级（Normal/Degraded/Recovery/Rebuild） |
+| TASK-H04 | Neo4j Rebuild 改为 Shadow Rebuild + Reconciliation + Cutover | EBCX-EV1-005 | ✅ Shadow Rebuild（Graph-B 并行构建）+ Reconciliation（6 项比较）+ Atomic Cutover + 可用性窗口为零 |
+| TASK-H05 | Graph Truth ↔ Neo4j Projection Reconciliation | EBCX-EV1-005A（新增） | ✅ 定期一致性校验 + 8 类差异检测 + Graph Reconciliation Evidence + Shadow Rebuild 联动 |
+| TASK-H06 | B1 Target 与 Measured Baseline 强制分离 | EBCX-EV1-016、EBCX-EV1-023 | ✅ Target/Measured 结构化分离 + EV1-016 Harness Ready ≠ EV1-023 实测达标 + measured 字段为实际值 |
+| TASK-H07 | Physical Evidence 统一最小字段标准 | 全局（§十一章节） | ✅ 14 个最小字段定义 + Neo4j 故障隔离示例 + 全局应用要求 + Gate 评审校验 |
+| TASK-H08 | EV2-001~004 允许并行开发 | EBCX-EV2-001~004 | ✅ 解除串行依赖，四个聚合根并行实现，前提是 Domain Event 契约（EV1-019）已冻结，Orchestrator 在四者完成后编排 |
+| TASK-H09 | Policy Engine 与 Neo4j 故障隔离 / Fail-Closed | EBCX-EV2-010 | ✅ Neo4j 故障时 Policy Engine 不崩溃 + Fail-Closed（绝不放行）+ Evidence Truth fallback + 绝对禁止 Neo4j down → Transaction Core down |
+| TASK-H10 | EV3~EV12 标记为 Milestone Placeholder | §三 EV3~EV12 章节 | ✅ 正式定义 Milestone Gate Placeholder + 进入前必须重新执行 Requirement→Design→Task + 禁止直接编码 |
+| 附加修订1 | Evidence 三类分类 | EBCX-EV2-005 | ✅ Mandatory/Decision/Execution 三类 + 11 阶段 Evidence 产生规则 + Evidence-First 而非 Evidence-Everything + 写放大可控 |
+| 附加修订2 | DAG 并行度优化 | §任务依赖 DAG | ✅ EV1 内部高并行 DAG + EV2-001~004 并行 + Critical Path 缩短 |
+
+**一致性校验结论**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening + TASK-H01~H10 全部 10 项 Task Hardening + 2 项附加修订均被任务覆盖，无遗漏，无矛盾，无漂移。
 
 ---
 
@@ -1290,7 +1664,7 @@ EV0-TASKS Gate 评审
 | TASK-R09 | 所有关键任务必须 Evidence First | 全部关键任务（含 Unit Test → Integration Test → Physical Verification → Evidence → Gate） | ✅ 每个关键任务含 Evidence 产出，Physical Verification 必须产生 Physical Evidence |
 | TASK-R10 | 最终必须形成 Digital Engineering 闭环 | EBCX-REVIEW-003（变更确认） | ✅ Requirement → Design Decision → Task → Code → Test → Evidence → Verification → Closure 闭环验证 |
 
-**10 条施工红线遵守结论**：TASK-R01~R10 全部 10 条施工红线均被任务严格遵守，无违反。
+**10 条施工红线遵守结论**：TASK-R01~R10 全部 10 条施工红线均被任务严格遵守，无违反。Task Hardening（TASK-H01~H10 + 2 项附加修订）进一步增强红线落地强度，未削弱任何红线。
 
 ---
 
@@ -1300,22 +1674,23 @@ EV0-TASKS Gate 评审
 
 | 阶段 | 任务数 | 类型 |
 |---|---|---|
-| EV1 Enterprise Core | 24 | 细化（1~3 人日/任务） |
+| EV1 Enterprise Core | 25 | 细化（1~3 人日/任务，含新增 EBCX-EV1-005A） |
 | EV2 Transaction Core | 17 | 细化（1~3 人日/任务） |
-| EV3~EV12 | 10 | 里程碑级 |
+| EV3~EV12 | 10 | 里程碑级（Milestone Gate Placeholder，TASK-H10） |
 | 集成测试 | 3 | 验证 |
 | 部署配置 | 2 | 部署 |
 | 评审验证 | 3 | 评审 |
-| **合计** | **59** | — |
+| **合计** | **60** | — |
 
-## 9.2 EV1 细化任务清单（24 个）
+## 9.2 EV1 细化任务清单（25 个）
 
 ```text
 EBCX-EV1-001 搭建 Modular Monolith 项目脚手架
 EBCX-EV1-002 建立 PostgreSQL schema 基础
-EBCX-EV1-003 实现 Evidence Ledger 基础设施（四层防御）🔴
-EBCX-EV1-004 实现 Outbox + EventBus 基础设施
-EBCX-EV1-005 实现 Neo4j Graph Projection 基础设施 🔴
+EBCX-EV1-003 实现 Evidence Ledger 基础设施（四层防御 + Hash Chain）🔴（TASK-H01 + TASK-H02）
+EBCX-EV1-004 实现 Outbox + EventBus 基础设施（Normal/Retry 分离）（TASK-H03）
+EBCX-EV1-005 实现 Neo4j Graph Projection 基础设施（Shadow Rebuild）🔴（TASK-H03 + TASK-H04）
+EBCX-EV1-005A 实现 Graph Truth ↔ Neo4j Projection Reconciliation 🔴（TASK-H05 新增）
 EBCX-EV1-006 实现 Object Storage Artifact 基础设施
 EBCX-EV1-007 实现 HTKIS-AF 安全基座
 EBCX-EV1-008 实现多租户基础
@@ -1326,30 +1701,30 @@ EBCX-EV1-012 实现 MasterData 聚合根
 EBCX-EV1-013 实现 Permission 聚合根
 EBCX-EV1-014 实现 24 Entity Graph Schema + Node/Edge Contract 🔴
 EBCX-EV1-015 实现 Observability 基础
-EBCX-EV1-016 实现 Benchmark Harness 框架 🔴
+EBCX-EV1-016 实现 Benchmark Harness 框架（Target/Measured 分离）🔴（TASK-H06）
 EBCX-EV1-017 实现 REST API /api/v1/rel/* 第一入口
 EBCX-EV1-018 实现 GraphQL 适配层
 EBCX-EV1-019 实现 Event Contract + Schema Registry
 EBCX-EV1-020 实现 CQRS Command/Query 分离基础
 EBCX-EV1-021 实现 DevSecOps CI/CD 流水线
 EBCX-EV1-022 实现 IaC 基础设施
-EBCX-EV1-023 执行 B1 Benchmark 首次压测 + Measured Baseline 🔴
+EBCX-EV1-023 执行 B1 Benchmark 首次压测 + Measured Baseline 🔴（TASK-H06）
 EBCX-EV1-024 EV1 Gate 评审准备
 ```
 
 ## 9.3 EV2 细化任务清单（17 个）
 
 ```text
-EBCX-EV2-001 实现 Order 聚合根
-EBCX-EV2-002 实现 Contract 聚合根
-EBCX-EV2-003 实现 Invoice 聚合根
-EBCX-EV2-004 实现 Payment 聚合根
-EBCX-EVE-005 实现 Transaction Orchestrator 11 阶段编排 🔴
+EBCX-EV2-001 实现 Order 聚合根（并行，TASK-H08）
+EBCX-EV2-002 实现 Contract 聚合根（并行，TASK-H08）
+EBCX-EV2-003 实现 Invoice 聚合根（并行，TASK-H08）
+EBCX-EV2-004 实现 Payment 聚合根（并行，TASK-H08）
+EBCX-EV2-005 实现 Transaction Orchestrator 11 阶段编排（Evidence 三类分类）🔴（附加修订1）
 EBCX-EV2-006 实现 Saga/Workflow 跨服务编排 + Compensation
 EBCX-EV2-007 实现 Domain Event 契约 + Schema Registry
 EBCX-EV2-008 实现 CQRS Read Model 投影
 EBCX-EV2-009 实现 Evidence Provenance & Data Lineage
-EBCX-EV2-010 实现 Policy Engine 基础
+EBCX-EV2-010 实现 Policy Engine 基础（Neo4j 故障隔离 / Fail-Closed）（TASK-H09）
 EBCX-EV2-011 实现 Approval 聚合根（一等公民）
 EBCX-EV2-012 实现 Agent Runtime 基础（三重治理）
 EBCX-EV2-013 实现 Agent Execution Authorization 模型 🔴
@@ -1361,13 +1736,15 @@ EBCX-EV2-017 EV2 Gate 评审准备
 
 ## 9.4 关键任务标记（🔴）
 
-以下 8 个任务为关键任务，对应 10 条施工红线的核心落地：
-- EBCX-EV1-003 Evidence Ledger 四层防御（TASK-R04）
-- EBCX-EV1-005 Neo4j Graph Projection（TASK-R06）
+以下 9 个任务为关键任务，对应 10 条施工红线 + TASK-H 修订的核心落地：
+- EBCX-EV1-003 Evidence Ledger 四层防御 + Hash Chain（TASK-R04 + TASK-H01 + TASK-H02）
+- EBCX-EV1-005 Neo4j Graph Projection + Shadow Rebuild（TASK-R06 + TASK-H03 + TASK-H04）
+- EBCX-EV1-005A Graph Reconciliation（TASK-H05 新增）
 - EBCX-EV1-014 24 Entity Graph Contract（TASK-R06）
-- EBCX-EV1-016 Benchmark Harness（TASK-R08）
-- EBCX-EV1-023 B1 Benchmark 首次执行（TASK-R08/R10）
-- EBCX-EV2-005 Orchestrator 11 阶段编排（TASK-R03/R05）
+- EBCX-EV1-016 Benchmark Harness + Target/Measured 分离（TASK-R08 + TASK-H06）
+- EBCX-EV1-023 B1 Benchmark 首次执行（TASK-R08/R10 + TASK-H06）
+- EBCX-EV2-005 Orchestrator 11 阶段编排 + Evidence 三类分类（TASK-R03/R05 + 附加修订1）
+- EBCX-EV2-010 Policy Engine + Neo4j 故障隔离（TASK-R07 + TASK-H09）
 - EBCX-EV2-013 Agent Authorization 模型（TASK-R07）
 - EBCX-EV2-016 B1 Benchmark 含 Transaction Core（TASK-R08/R10）
 
@@ -1380,35 +1757,128 @@ Requirement（spec.md v1.1）
     ↓
 Design Decision（design.md v1.1，D01~D24 + D-GATE-01~08）
     ↓
-Task（tasks.md v1.0，59 个任务）
+Task（tasks.md v1.1，60 个任务，含 TASK-H01~H10 + 2 项附加修订）
     ↓
 Code（EV1 + EV2 实现）
     ↓
 Test（Unit Test + Integration Test + E2E Test）
     ↓
-Evidence（Physical Evidence，每个任务产出）
+Evidence（Physical Evidence，每个任务产出，符合 TASK-H07 最小字段标准）
     ↓
-Verification（Physical Verification + B1 Benchmark + 一致性校验）
+Verification（Physical Verification + B1 Benchmark + 一致性校验 + Hash Chain 校验 + Graph Reconciliation）
     ↓
 Closure（EV1 Gate + EV2 Gate + 评审验证）
 ```
 
-**闭环验证结论**：Digital Engineering 闭环完整，每个环节均有 Physical Evidence 产出，可追溯、可审计、可验证。
+**闭环验证结论**：Digital Engineering 闭环完整，每个环节均有 Physical Evidence 产出（符合 TASK-H07 最小字段标准），可追溯、可审计、可验证。
+
+---
+
+# 十一、Physical Evidence 统一最小字段标准（TASK-H07）
+
+> **TASK-H07 修订背景**：v1.0 很多任务写"Unit Test + Integration Test + Evidence JSON"，但 Evidence JSON 本身不是 Physical Evidence。Physical Evidence 必须包含足够的字段以证明任务真实完成、可追溯、可验证、可复现。
+
+## 11.1 Physical Evidence 最小字段标准（锁定）
+
+所有任务的 Evidence 产出必须包含以下最小字段集：
+
+```json
+{
+  "execution_id": "...",
+  "timestamp": "...",
+  "environment": "...",
+  "git_commit": "...",
+  "test_command": "...",
+  "actual_output": "...",
+  "actual_metrics": "...",
+  "database_state": "...",
+  "event_id": "...",
+  "evidence_id": "...",
+  "trace_id": "...",
+  "failure_injection_result": "...",
+  "verification_result": "...",
+  "verifier": "..."
+}
+```
+
+| 字段 | 说明 | 强制 |
+|---|---|---|
+| execution_id | 执行唯一标识 | ✅ 必填 |
+| timestamp | 执行时间戳 | ✅ 必填 |
+| environment | 执行环境（dev/staging/prod + 硬件规格） | ✅ 必填 |
+| git_commit | 代码 commit SHA | ✅ 必填 |
+| test_command | 实际执行的测试命令 | ✅ 必填 |
+| actual_output | 实际输出（非期望输出） | ✅ 必填 |
+| actual_metrics | 实际测量指标（非目标值） | ✅ 必填 |
+| database_state | 执行后数据库状态快照 | ✅ 必填 |
+| event_id | 关联 Outbox Event ID | ✅ 必填 |
+| evidence_id | 关联 Evidence Ledger 记录 ID | ✅ 必填 |
+| trace_id | OpenTelemetry trace ID | ✅ 必填 |
+| failure_injection_result | 故障注入结果（如适用） | 条件必填 |
+| verification_result | 验证结果（PASS/FAIL + 详情） | ✅ 必填 |
+| verifier | 验证者（独立组件/人工） | ✅ 必填 |
+
+## 11.2 示例：Neo4j 故障隔离测试 Physical Evidence
+
+❌ **不够（v1.0 风格）**：
+```json
+{"neo4j_failure_test": "PASS"}
+```
+
+✅ **应接近（v1.1 TASK-H07 标准）**：
+```json
+{
+  "test": "NEO4J_FAILURE_ISOLATION",
+  "execution_id": "exec-2026-09-07-001",
+  "timestamp": "2026-09-07T10:30:00Z",
+  "environment": "staging / 16 vCPU 64GB",
+  "git_commit": "a1b2c3d4e5f6...",
+  "test_command": "pytest tests/integration/test_neo4j_failure_isolation.py",
+  "neo4j_before": "healthy",
+  "neo4j_action": "stopped",
+  "transaction_id": "tx-uuid-001",
+  "transaction_result": "COMMITTED",
+  "transaction_latency_ms": 182,
+  "neo4j_result": "UNAVAILABLE",
+  "outbox_event_id": "evt-uuid-001",
+  "recovery_action": "REPLAY",
+  "projection_result": "CONVERGED",
+  "actual_metrics": {
+    "transaction_tps": 2050,
+    "transaction_p95_ms": 412,
+    "projection_lag_ms": 2100
+  },
+  "database_state": "PostgreSQL healthy, Neo4j stopped, Outbox 1 event pending",
+  "evidence_id": "evd-uuid-001",
+  "trace_id": "trace-uuid-001",
+  "verification_result": "PASS",
+  "verified_at": "2026-09-07T10:30:05Z",
+  "verifier": "IndependentVerifierComponent"
+}
+```
+
+## 11.3 全局应用要求
+
+- **所有任务的 Evidence 产出必须升级到 TASK-H07 标准**：本 tasks.md v1.1 中所有任务的 Evidence 产出描述已标注"符合 TASK-H07 Physical Evidence 最小字段标准"
+- **Gate 评审必须校验**：EV1 Gate / EV2 Gate 评审时，必须校验每个任务的 Evidence 产出是否符合 TASK-H07 最小字段标准，不符合则 Gate FAIL
+- **Physical Verification ≠ Evidence JSON**：Physical Verification 必须产生 Physical Evidence（含上述最小字段），而非简单的 JSON 标记
 
 ---
 
 ## 文档结束
 
-> 本 tasks.md v1.0 基于 spec.md v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN）+ design.md v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN）生成，覆盖 EV1~EV12 全部阶段任务，重点细化 EV1 Enterprise Core（24 个任务）与 EV2 Transaction Core（17 个任务），EV3~EV12 为里程碑级任务（10 个）。
+> 本 tasks.md v1.1 基于 spec.md v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN）+ design.md v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN）生成，执行 TASK HARDENING-001 补齐 TASK-H01~H10 + 2 项附加修订，覆盖 EV1~EV12 全部阶段任务，重点细化 EV1 Enterprise Core（25 个任务，含新增 EBCX-EV1-005A）与 EV2 Transaction Core（17 个任务），EV3~EV12 为里程碑级任务（10 个，Milestone Gate Placeholder）。
 >
-> **任务统计**：59 个任务（EV1: 24 + EV2: 17 + EV3~EV12: 10 + 集成测试: 3 + 部署配置: 2 + 评审验证: 3）。
+> **任务统计**：60 个任务（EV1: 25 + EV2: 17 + EV3~EV12: 10 + 集成测试: 3 + 部署配置: 2 + 评审验证: 3）。
 >
-> **一致性校验**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening 均被任务覆盖，无遗漏，无矛盾，无漂移。
+> **Task Hardening 修订**：TASK-H01~H10 全部 10 项 + 2 项附加修订（Evidence 三类分类 + DAG 并行度优化）全部落实，骨架未削弱。
+>
+> **一致性校验**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening + TASK-H01~H10 全部 10 项 Task Hardening + 2 项附加修订均被任务覆盖，无遗漏，无矛盾，无漂移。
 >
 > **10 条施工红线**：TASK-R01~R10 全部 10 条施工红线均被任务严格遵守，无违反。
 >
 > **8 条架构红线 + 7 条母架构约束**：全部对齐，无漂移。
 >
-> **Digital Engineering 闭环**：Requirement → Design Decision → Task → Code → Test → Evidence → Verification → Closure 闭环完整。
+> **Digital Engineering 闭环**：Requirement → Design Decision → Task → Code → Test → Evidence → Verification → Closure 闭环完整，Physical Evidence 符合 TASK-H07 最小字段标准。
 >
-> **后续阶段**：EV1 编码须在 EV0-G0 Gate 通过后方可启动。本 tasks.md v1.0 待大G项目经理体系 EV0-TASKS Gate 复审。
+> **后续阶段**：EV1 编码须在 EV0-G0 Gate 通过后方可启动。本 tasks.md v1.1 待大G项目经理体系 EV0-TASKS Gate 复审。

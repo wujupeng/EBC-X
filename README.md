@@ -5,7 +5,7 @@
 
 [![Status](https://img.shields.io/badge/EV0-SPEC-PASS%20%2F%20CLOSED-brightgreen)]()
 [![Design](https://img.shields.io/badge/EV0-DESIGN-v1.1%20PASS%20%2F%20CLOSED-brightgreen)]()
-[![Tasks](https://img.shields.io/badge/EV0-TASKS-v1.0%20DRAFT-yellow)]()
+[![Tasks](https://img.shields.io/badge/EV0-TASKS-v1.1%20HARDENED-yellow)]()
 
 ---
 
@@ -299,7 +299,7 @@ EBC-X Core
 |------|------|------|------|
 | **需求规格** | [`.codeartsdoer/specs/ebcx_ev0_arch/spec.md`](.codeartsdoer/specs/ebcx_ev0_arch/spec.md) | 🟢 v1.1 FROZEN | EARS 格式，1094 行，13 个能力模块 |
 | **技术设计** | [`.codeartsdoer/specs/ebcx_ev0_arch/design.md`](.codeartsdoer/specs/ebcx_ev0_arch/design.md) | 🟢 v1.1 FROZEN | D01~D24 + D-GATE-01~08，约 2196 行 |
-| **任务规划** | [`.codeartsdoer/specs/ebcx_ev0_arch/tasks.md`](.codeartsdoer/specs/ebcx_ev0_arch/tasks.md) | 🟡 v1.0 DRAFT | 59 个任务，EV1(24) + EV2(17) + EV3~EV12(10) + 集成/部署/评审(8) |
+| **任务规划** | [`.codeartsdoer/specs/ebcx_ev0_arch/tasks.md`](.codeartsdoer/specs/ebcx_ev0_arch/tasks.md) | 🟡 v1.1 HARDENED | 60 个任务，EV1(25) + EV2(17) + EV3~EV12(10) + 集成/部署/评审(8)，TASK-H01~H10 加固 |
 
 ---
 
