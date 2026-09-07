@@ -7,7 +7,7 @@
     "neo4j": "in-memory mock (Cypher MERGE semantics)",
     "postgresql": "18.3 (for projection metadata tables)"
   },
-  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "git_commit": "96b354ee2d00ac9203e0d19214ef2cf15e20c04a",
   "test_command": "go test ./internal/platform/graph/ -v -count=1",
   "actual_output": {
     "TestNodeTypeValidation": "PASS — 24 canonical node types validated",

@@ -1,0 +1,110 @@
+{
+  "execution_id": "EBCX-EV1-005-PHYSICAL-GATE2-20260907-001",
+  "timestamp": "2026-09-07T20:00:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "neo4j": "5.26.0 Community Edition (REAL, bolt://localhost:7687)",
+    "neo4j_driver": "github.com/neo4j/neo4j-go-driver/v5 v5.28.4",
+    "postgresql": "18.3 (embedded-postgres, REAL)",
+    "java": "OpenJDK 21.0.11",
+    "note": "All tests use REAL Neo4j 5.26.0 + REAL PostgreSQL 18.3 — NO Mock"
+  },
+  "git_commit": "96b354ee2d00ac9203e0d19214ef2cf15e20c04a",
+  "test_command": "go test ./internal/platform/graph/ -tags integration -v -run 'TestPhysical2|TestPhysical3' -count=1 -timeout 180s",
+  "actual_output": {
+    "TestPhysical2_Neo4jKillRecovery": "PASS (84.46s) — PHYS-01: Real Neo4j Kill → Transaction Core COMMIT → Evidence PERSIST → Outbox pending → Neo4j restart → replay → graph recovered",
+    "TestPhysical2_ShadowRebuild_GraphA_Serves_While_GraphB_Builds": "PASS (1.08s) — PHYS-02: Graph-A served 10 queries during Graph-B rebuild, availability_gap=2ms, Reconciliation 6/6 PASS",
+    "TestPhysical2_ShadowRebuild_ReconciliationFail_AbortsCutover": "PASS (0.09s) — PHYS-02: Graph-A=5, Graph-B=3 → Cutover ABORTED",
+    "TestPhysical3_PostgreSQLTruth_Reconciliation": "PASS (8.77s) — PHYS-03: Real PostgreSQL → ExpectedGraphState → Real Neo4j → Reconciliation (5 diff types verified)",
+    "TestPhysical3_PostgreSQLTruth_AdjudicationWins": "PASS (8.36s) — PHYS-03: PostgreSQL Evidence Ledger WINS adjudication",
+    "total_pass": 5,
+    "total_fail": 0
+  },
+  "actual_metrics": {
+    "PHYS-01": {
+      "neo4j_kill_method": "taskkill /F /PID (real process kill, NOT port 9999)",
+      "neo4j_down_confirmed": "port 7687 DOWN after kill",
+      "transaction_core_committed": true,
+      "evidence_ledger_persisted": true,
+      "outbox_pending_count": 2,
+      "neo4j_projection_error": "ConnectivityError (expected — Neo4j is DOWN)",
+      "neo4j_restart_confirmed": "port 7687 UP after restart",
+      "graph_recovered_count": 3,
+      "recovery_method": "Outbox replay → eventual consistency"
+    },
+    "PHYS-02": {
+      "graph_a_serving_during_rebuild": true,
+      "queries_during_rebuild": 10,
+      "query_errors_during_rebuild": 0,
+      "reconciliation_6_comparisons": "NodeCount=true, EdgeCount=true, EvidenceRef=true, TenantIso=true, Version=true, Checksum=true",
+      "availability_gap_ms": 2,
+      "reconciliation_fail_cutover": "ABORTED (Graph-A=5, Graph-B=3)"
+    },
+    "PHYS-03": {
+      "postgresql_version": "18.3 (embedded-postgres, REAL)",
+      "evidence_ledger_records": 4,
+      "derived_expected_nodes": 4,
+      "neo4j_projected_nodes": 4,
+      "diff_types_verified": ["missing_node", "extra_node", "wrong_version", "wrong_evidence_ref", "wrong_tenant"],
+      "adjudication_source": "PostgreSQL Evidence Ledger (§2.5.2 三层真相模型)",
+      "postgresql_wins": true
+    }
+  },
+  "database_state": "Real Neo4j 5.26.0 (bolt://localhost:7687) + Real PostgreSQL 18.3 (embedded, port 5433) — both physically running",
+  "event_id": "evt-ebcx-ev1-005-physical-gate2",
+  "evidence_id": "evd-ebcx-ev1-005-physical-gate2-20260907-001",
+  "trace_id": "trace-ebcx-ev1-005-physical-gate2-001",
+  "failure_injection_result": {
+    "tests": [
+      {"action": "Kill running Neo4j process (taskkill /F)", "expected": "Neo4j DOWN, Transaction Core continues", "actual": "Port 7687 DOWN, Transaction Core COMMITTED=true, Evidence Ledger=2 records, Outbox pending=2 events", "result": "PASS"},
+      {"action": "Neo4j projection during outage", "expected": "Projection fails (Neo4j unavailable)", "actual": "ConnectivityError: dial tcp [::1]:7687: forbidden", "result": "PASS"},
+      {"action": "Restart Neo4j after kill", "expected": "Neo4j comes back up", "actual": "Port 7687 UP after restart", "result": "PASS"},
+      {"action": "Outbox replay after recovery", "expected": "Pending events projected to Neo4j", "actual": "3 nodes after replay (1 initial + 2 replayed)", "result": "PASS"},
+      {"action": "Graph-A queries during Graph-B rebuild", "expected": "Graph-A continues serving (0 errors)", "actual": "10 queries, 0 errors", "result": "PASS"},
+      {"action": "Reconciliation with matching graphs", "expected": "6/6 PASS, Cutover allowed", "actual": "6/6 PASS, availability_gap=2ms", "result": "PASS"},
+      {"action": "Reconciliation with incomplete Graph-B", "expected": "FAIL → Cutover ABORTED", "actual": "Graph-A=5, Graph-B=3 → ABORTED", "result": "PASS"},
+      {"action": "PostgreSQL Truth vs Neo4j (missing node)", "expected": "Reconciliation detects", "actual": "1 missing node detected", "result": "PASS"},
+      {"action": "PostgreSQL Truth vs Neo4j (extra node)", "expected": "Reconciliation detects", "actual": "1 extra node detected", "result": "PASS"},
+      {"action": "PostgreSQL Truth vs Neo4j (wrong version)", "expected": "Reconciliation detects", "actual": "4 nodes with wrong version", "result": "PASS"},
+      {"action": "PostgreSQL Truth vs Neo4j (wrong evidence ref)", "expected": "Reconciliation detects", "actual": "4 nodes with wrong evidence", "result": "PASS"},
+      {"action": "PostgreSQL Truth vs Neo4j (wrong tenant)", "expected": "Reconciliation detects", "actual": "expected 4 in pg-tenant, actual 0", "result": "PASS"},
+      {"action": "PostgreSQL adjudication priority", "expected": "PostgreSQL wins", "actual": "PostgreSQL Evidence Ledger is authoritative", "result": "PASS"}
+    ]
+  },
+  "verification_result": {
+    "status": "PASS",
+    "gate": "Physical Closure Gate 2 — Real Neo4j 5.26.0 + Real PostgreSQL 18.3",
+    "checks": [
+      "PHYS-01: Real Neo4j process KILL (taskkill /F, NOT port 9999) → port 7687 DOWN confirmed",
+      "PHYS-01: Transaction Core COMMITTED during Neo4j outage",
+      "PHYS-01: Evidence Ledger PERSISTED during Neo4j outage",
+      "PHYS-01: Outbox accumulating pending events during Neo4j outage",
+      "PHYS-01: Neo4j projection correctly fails during outage (ConnectivityError)",
+      "PHYS-01: Neo4j RESTART → port 7687 UP confirmed",
+      "PHYS-01: Outbox replay → graph recovered (3 nodes, eventual consistency)",
+      "PHYS-02: Graph-A serves 10 queries during Graph-B rebuild (0 query errors)",
+      "PHYS-02: Reconciliation 6/6 PASS (NodeCount/EdgeCount/EvidenceRef/TenantIso/Version/Checksum)",
+      "PHYS-02: Atomic Cutover availability_gap=2ms (measured, not hardcoded)",
+      "PHYS-02: Reconciliation FAIL (Graph-A=5, Graph-B=3) → Cutover ABORTED",
+      "PHYS-03: Real PostgreSQL 18.3 Evidence Ledger as Truth Source (NOT mockTruthSource)",
+      "PHYS-03: Derive ExpectedGraphState from PostgreSQL (4 nodes)",
+      "PHYS-03: Project to Real Neo4j 5.26.0 (4 nodes)",
+      "PHYS-03: 5 diff types physically verified (missing/extra/wrong_version/wrong_evidence/wrong_tenant)",
+      "PHYS-03: PostgreSQL adjudication priority — PostgreSQL Evidence Ledger wins (§2.5.2)"
+    ]
+  },
+  "verifier": "Real Neo4j 5.26.0 + Real PostgreSQL 18.3 (embedded) + neo4j-go-driver v5.28.4 + go test (5 Physical Gate 2 tests)",
+  "task_id": "EBCX-EV1-005-PHYSICAL-GATE2",
+  "task_title": "Physical Closure Gate 2: PHYS-01 (Neo4j Kill/Recovery) + PHYS-02 (Graph-A/B Parallel) + PHYS-03 (PostgreSQL Truth)",
+  "red_lines_complied": ["TASK-R06", "TASK-R09"],
+  "task_h_complied": ["TASK-H03", "TASK-H04", "TASK-H05"],
+  "architecture_principle": "PostgreSQL Evidence Truth → Real Neo4j Graph Query Truth. Neo4j fault does not block Transaction Core. Shadow Rebuild with Graph-A serving during Graph-B build. PostgreSQL wins adjudication.",
+  "evidence_provenance": {
+    "git_commit": "96b354ee2d00ac9203e0d19214ef2cf15e20c04a",
+    "git_commit_verified": true,
+    "baseline_identity": "EV1-005/005A Physical Gate 2",
+    "version": "v2.0",
+    "stage_lineage": "EV0 FROZEN → EV1-001~004 → EV1-005/005A Logic PASS → EV1-005/005A Physical Gate 1 (CONDITIONAL) → EV1-005/005A Physical Gate 2 (PASS)"
+  }
+}

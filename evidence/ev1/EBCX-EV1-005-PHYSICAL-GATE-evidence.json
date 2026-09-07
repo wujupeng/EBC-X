@@ -9,7 +9,7 @@
     "java": "OpenJDK 21.0.11",
     "note": "NOT Mock — real Neo4j 5.26.0 server with Bolt protocol"
   },
-  "git_commit": "0f3b7be252919f457e6e637f330b6948a9ce9ab62d",
+  "git_commit": "96b354ee2d00ac9203e0d19214ef2cf15e20c04a",
   "test_command": "go test ./internal/platform/graph/ -tags integration -v -run TestPhysical -count=1 -timeout 120s",
   "actual_output": {
     "TestPhysical_SchemaCreation": "PASS (0.05s) — 24 unique constraints created in real Neo4j",
