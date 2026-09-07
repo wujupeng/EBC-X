@@ -1,0 +1,68 @@
+{
+  "execution_id": "EBCX-EV1-008-20260908-001",
+  "timestamp": "2026-09-08T11:45:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "postgresql": "18.3 (for tenant.tenants + tenant.country_packs + extension tables)"
+  },
+  "git_commit": "a763d180119e6b14e73e9f726509a00b1b0788c9",
+  "test_command": "go test ./internal/platform/tenant/... -v -count=1",
+  "actual_output": {
+    "TestIsValidCountryPack": "PASS — 5 valid packs, invalid rejected",
+    "TestAllCountryPacks_Count": "PASS — exactly 5 Country Packs",
+    "TestGetPackExtension": "PASS — extension metadata retrieved, invalid rejected",
+    "TestExtensionTableName": "PASS — {table}_{suffix} pattern (order_cn_ext, invoice_us_ext)",
+    "TestTenant_IsPackEnabled": "PASS — enabled pack returns true, disabled returns false",
+    "TestPackRouter_Route_Success": "PASS — route returns correct tenant/pack/ext table",
+    "TestPackRouter_Route_TenantNotFound": "PASS — nonexistent tenant rejected",
+    "TestPackRouter_Route_InvalidPack": "PASS — invalid pack rejected",
+    "TestPackRouter_Route_PackNotEnabled": "PASS — disabled pack rejected",
+    "TestPackRouter_RouteFromHeaders_Success": "PASS — X-Tenant-Id + X-Country-Pack routing works",
+    "TestPackRouter_RouteFromHeaders_MissingTenant": "PASS — missing X-Tenant-Id rejected",
+    "TestPackRouter_RouteFromHeaders_MissingPack": "PASS — missing X-Country-Pack rejected",
+    "TestPackRouter_RouteFromHeaders_CaseInsensitive": "PASS — lowercase 'cn' matches PackChina",
+    "TestPackRouter_ListEnabledPacks": "PASS — returns tenant's enabled packs",
+    "TestValidateAllPacksReserved": "PASS — all 5 packs active and valid",
+    "TestValidateCoreTableNoFork_Identical": "PASS — identical core tables pass validation",
+    "TestValidateCoreTableNoFork_DifferentColumns": "PASS — column count mismatch detected",
+    "TestValidateCoreTableNoFork_DifferentTypes": "PASS — column type mismatch detected",
+    "TestPackExtensions_AllFiveReserved": "PASS — CN/EU/US/JP/ASEAN all reserved with correct suffixes",
+    "total_pass": 19,
+    "total_fail": 0
+  },
+  "actual_metrics": {
+    "country_packs": 5,
+    "pack_ids": ["CN", "EU", "US", "JP", "ASEAN"],
+    "ext_table_suffixes": ["cn_ext", "eu_ext", "us_ext", "jp_ext", "asean_ext"],
+    "rls_enabled_on_all_ext_tables": true,
+    "core_table_no_fork_validated": true,
+    "pack_routing_headers": ["X-Tenant-Id", "X-Country-Pack"],
+    "case_insensitive_pack_lookup": true,
+    "extension_table_pattern": "{base_table}_{pack_suffix}"
+  },
+  "database_state": "V9__tenant_pack_routing.sql — tenant.tenants + tenant.country_packs (5 rows) + tenant.tenant_packs + 5 order ext tables (CN/EU/US/JP/ASEAN) with RLS",
+  "event_id": "evt-ebcx-ev1-008-multi-tenant",
+  "evidence_id": "evd-ebcx-ev1-008-20260908-001",
+  "trace_id": "trace-ebcx-ev1-008-001",
+  "verification_result": {
+    "status": "PASS",
+    "checks": [
+      "5 Country Pack extension points reserved: CN / EU / US / JP / ASEAN",
+      "Pack routing via X-Tenant-Id + X-Country-Pack headers (case-insensitive)",
+      "Per-tenant pack enablement checked (disabled pack rejected)",
+      "Extension table naming: {base_table}_{pack_suffix} (e.g., order_cn_ext)",
+      "Core table no-fork validation: column count + name + type consistency",
+      "RLS enabled on all extension tables (tenant_id isolation)",
+      "V9 migration: tenant.tenants + tenant.country_packs + tenant.tenant_packs",
+      "V9 migration: 5 order extension tables with localized fields",
+      "Shared schema + RLS model (no separate schemas per tenant)",
+      "Localized fields in extension tables (no core table fork)"
+    ]
+  },
+  "verifier": "go test (19 tests: pack validation + routing + headers + no-fork + 5 packs reserved)",
+  "task_id": "EBCX-EV1-008",
+  "task_title": "Multi-Tenant Base (Tenant Isolation + RLS + Pack Routing + Core Table No-Fork)",
+  "red_lines_complied": ["TASK-R01", "TASK-R09"],
+  "architecture_principle": "Shared schema + RLS for tenant isolation. 5 Country Pack extension points (CN/EU/US/JP/ASEAN). Core tables do NOT fork across packs — localization goes in extension tables ({table}_{pack}_ext)."
+}
