@@ -2,9 +2,9 @@
 
 > **项目：EBC-X — Enterprise Business & Industrial Operating System（企业与工业智能运营操作系统）**
 > **阶段：EV0 — Architecture & Policy Alignment → 编码任务规划（tasks.md）**
-> **文档版本：v1.1（执行 EBCX-EV0-TASKS-HARDENING-001 Task Hardening 修订）**
-> **状态：🟡 TASKS v1.1（Task Hardening 完成，待大G项目经理体系 EV0-TASKS Gate 复审）**
-> **上一版本：v1.0（CONDITIONAL PASS，裁决不退回重做，不推翻骨架，仅要求 Task Hardening）**
+> **文档版本：v1.2（执行 EBCX-EV0-TASKS-HARDENING-002 Benchmark/Governance 语义收口修订）**
+> **状态：🟡 TASKS v1.2（Task Hardening-002 完成，待大G项目经理体系 EV0-TASKS Gate 复审）**
+> **上一版本：v1.1（CONDITIONAL PASS，裁决不推翻 tasks.md，不修改 spec.md/design.md，仅要求执行 TASK HARDENING-002 补齐 TASK-H11~H13）**
 > **需求基线：`.codeartsdoer/specs/ebcx_ev0_arch/spec.md` v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN，不可变基线，本修订不得修改）**
 > **设计基线：`.codeartsdoer/specs/ebcx_ev0_arch/design.md` v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN，不可变基线，本修订不得修改）**
 > **产品/架构总设计：大G项目经理体系**
@@ -24,30 +24,31 @@
 - ❌ 禁止修改 design.md v1.1（已冻结）
 - ❌ 禁止在 Tasks 阶段重新发明架构（TASK-R01）
 - ❌ 禁止把 14 Modules 拆成大量微服务（TASK-R02）
-- ✅ 只允许 tasks.md v1.0 → Task Hardening → tasks.md v1.1，补齐 TASK-H01~H10 + 2 项附加修订，严格遵循 10 条施工红线（TASK-R01~R10）
+- ✅ 只允许 tasks.md v1.1 → TASK HARDENING-002 → tasks.md v1.2，补齐 TASK-H11~H13（Benchmark/Governance 语义收口），保留 TASK-H01~H10 + 2 项附加修订，严格遵循 10 条施工红线（TASK-R01~R10）
 
 **覆盖范围**：EV1~EV12 全部阶段任务，重点细化 EV1 Enterprise Core 与 EV2 Transaction Core（第一阶段可执行任务），EV3~EV12 为里程碑级任务。
 
 ---
 
-## Task Hardening 修订声明（v1.0 → v1.1）
+## Task Hardening 修订声明（v1.1 → v1.2，Benchmark/Governance 语义收口）
 
-> **修订依据**：大G项目经理体系对 tasks.md v1.0 完成 EV0-TASKS Gate 审查，裁决为 🟡 CONDITIONAL PASS，不退回重做，不推翻 tasks.md 骨架，仅要求执行 TASK HARDENING-001，补齐 TASK-H01~H10 + 2 项附加修订后重新提交 tasks.md v1.1。
+> **修订依据**：大G项目经理体系已直接复核 GitHub main 分支上 tasks.md v1.1 实体内容，裁决 🟡 CONDITIONAL PASS，不推翻 tasks.md v1.1 骨架，不修改 spec.md/design.md（均 FROZEN），仅要求执行 TASK HARDENING-002，补齐 TASK-H11~H13（Benchmark/Governance 语义收口），生成 tasks.md v1.2。
 >
 > **硬约束**：
 > - ❌ 禁止修改 EV0-SPEC v1.1（spec.md 已冻结）
 > - ❌ 禁止修改 EV0-DESIGN v1.1（design.md 已冻结）
-> - ❌ 禁止推翻 tasks.md 骨架（骨架是对的）
+> - ❌ 禁止推翻 tasks.md v1.1 骨架（H01~H10 已认可，保留）
 > - ❌ 禁止重新设计架构 / 授权编码 / 进入编码执行阶段
-> - ✅ 只允许 tasks.md v1.0 → TASK HARDENING-001 → tasks.md v1.1，补齐 TASK-H01~H10 + 2 项附加修订
+> - ✅ 只允许 tasks.md v1.1 → TASK HARDENING-002 → tasks.md v1.2，仅补齐 TASK-H11~H13 三项 Benchmark/Governance 语义收口
 >
-> **已认可的正确骨架（Hardening 不得削弱）**：
+> **已认可保留项（Hardening-002 不得削弱）**：
 > 1. ✅ Modular Monolith → Evidence Ledger → Outbox → EventBus → Neo4j Projection
 > 2. ✅ Transaction → Saga → Policy → Approval → Authorization → Execution → Independent Verification → Evidence
 > 3. ✅ 13 Capability → 14 Module → 6 Bounded Context → 24 Entity → Cross-cutting Platform
 > 4. ✅ Agent Runtime 设计（不能自签发 Execution Token / 不能自验证 / 不能绕过 Policy / 不能跨租户 / Execution Token 短期有效 / Idempotency / Independent Verifier）
+> 5. ✅ TASK-H01~H10 全部已 PASS（Hash Chain 真正链式哈希 / Evidence Ledger 四层防御 REVOKE 产生 ERROR / Normal/Retry ≤3s 分离 / Shadow Rebuild + Reconciliation + Cutover / Graph Reconciliation / Target/Measured 分离 / Physical Evidence 14 最小字段 / EV2-001~004 并行 / Policy Engine Fail-Closed / EV3~EV12 Milestone Placeholder / Evidence 三类分类）
 >
-> **TASK-H 修订清单**：
+> **TASK-H 修订清单（v1.2 新增 TASK-H11~H13）**：
 >
 > | TASK-H | 主题 | 严重度 | 落实位置 |
 > |---|---|---|---|
@@ -61,6 +62,9 @@
 > | TASK-H08 | EV2-001~004 允许并行开发，解除不必要串行依赖 | 🟡 必须修正 | EBCX-EV2-001~004 |
 > | TASK-H09 | Policy Engine 与 Neo4j 故障隔离 / Fail-Closed 行为明确 | 🔴 必须补 | EBCX-EV2-010 |
 > | TASK-H10 | EV3~EV12 标记为 Milestone Placeholder，不得直接进入编码 | 🟠 必须澄清 | §三 EV3~EV12 章节 |
+> | TASK-H11 | B2~B5 Benchmark Reserved / Executable 语义收口 | 🔴 必须补 | EBCX-EV2-015 |
+> | TASK-H12 | B1 Transaction Core / Agent Benchmark Scenario 分离 | 🔴 必须补 | EBCX-EV2-016 |
+> | TASK-H13 | B1 Baseline Identity / Version / Stage Lineage | 🟠 必须补 | EBCX-EV1-023、EBCX-EV2-016 |
 > | 附加修订1 | Evidence 三类分类（避免 Evidence-Everything 过度设计） | 🟠 必须补 | EBCX-EV2-005 |
 > | 附加修订2 | DAG 并行度优化（EV1 内部） | 🟢 建议 | §任务依赖 DAG |
 
@@ -111,7 +115,7 @@ EV1 Enterprise Core（基础设施 + 聚合根，高并行 DAG）
   ├─ EBCX-EV1-020 CQRS Command/Query 分离基础
   ├─ EBCX-EV1-021 DevSecOps CI/CD 流水线
   ├─ EBCX-EV1-022 IaC 基础设施（Terraform + 华为云）
-  ├─ EBCX-EV1-023 B1 Benchmark 首次执行 + Measured Baseline（TASK-H06 Harness Ready vs 实测达标）
+  ├─ EBCX-EV1-023 B1 Benchmark 首次执行 + Measured Baseline（TASK-H06 Harness Ready vs 实测达标 + TASK-H13 Baseline Identity）
   └─ EBCX-EV1-024 EV1 Gate 评审准备
 
   EV1 内部并行 DAG（附加修订2）：
@@ -158,8 +162,8 @@ EV2 Transaction Core（聚合根 + Orchestrator + 治理）
   ├─ EBCX-EV2-012 Agent Runtime 基础（三重治理）
   ├─ EBCX-EV2-013 Agent Execution Authorization 模型（D-GATE-07）
   ├─ EBCX-EV2-014 REST API Transaction/Evidence/Policy/Agent/Graph
-  ├─ EBCX-EV2-015 B2~B5 Profile 预留框架
-  ├─ EBCX-EV2-016 B1 Benchmark 执行 + Measured Baseline
+  ├─ EBCX-EV2-015 B2~B5 Profile 预留框架（TASK-H11 Reserved/Executable 语义收口）
+  ├─ EBCX-EV2-016 B1 Benchmark 双 Scenario 执行 + Measured Baseline（TASK-H12 B1-TX/B1-AGENT 分离 + TASK-H13 Baseline Identity）
   └─ EBCX-EV2-017 EV2 Gate 评审准备
 
   EV2-001~004 并行 DAG（TASK-H08）：
@@ -796,15 +800,24 @@ EV0-TASKS Gate 评审
 ### EBCX-EV1-023：执行 B1 Benchmark 首次压测 + 产出 Measured Baseline 🔴 关键
 - **关联 spec.md**：§4.1 规则 3（B1 Profile）
 - **关联 design.md**：D21 Benchmark Architecture、D-GATE-04（B1-EBCX-BASELINE Profile 绑定）
-- **TASK-H 修订**：TASK-H06（B1 Target 与 Measured Baseline 强制分离，明确 Harness Ready vs 实测达标）
+- **TASK-H 修订**：TASK-H06（B1 Target 与 Measured Baseline 强制分离，明确 Harness Ready vs 实测达标）+ TASK-H13（B1 Baseline Identity / Version / Stage Lineage）
 - **实现内容**：
   - 部署 B1-EBCX-BASELINE Hardware（16 vCPU / 64 GB RAM 等）
   - 生成 B1 Workload Dataset（50 租户 / 10000 用户 / 1000 万 Order 等）
   - 执行 B1 Scenario（Create Order + validation + tenant RLS + commit + evidence append + audit）
   - 测量 P50/P95/P99/TPS/ErrorRate
-  - **TASK-H06 产出结构化 Measured Baseline（Target 与 Measured 严格分离）**：
+  - **TASK-H06 + TASK-H13 产出结构化 Measured Baseline（Target 与 Measured 严格分离 + Baseline Profile Identity）**：
     ```json
     {
+      "benchmark_profile": "B1-EBCX-BASELINE",
+      "benchmark_scenario": "B1-TX",
+      "baseline_stage": "EV1-FOUNDATION",
+      "baseline_version": "1.0",
+      "baseline_lineage": {
+        "predecessor": null,
+        "successor": "EV2-TRANSACTION-CORE v2.0",
+        "target_unchanged": true
+      },
       "target": {
         "tps": 2000,
         "p95_ms": 500,
@@ -823,7 +836,31 @@ EV0-TASKS Gate 评审
       "graph_projection_mode": "async Normal Mode"
     }
     ```
-  - 产出 Measured Baseline 至 `{repo}/benchmarks/baselines/b1/{date}.json`
+  - **TASK-H13 Baseline Profile Identity（锁定）**：
+    - **v1.1 问题**：v1.1 产出 Measured Baseline 至 `{repo}/benchmarks/baselines/b1/{date}.json`，EV1-023（B1 首次执行）与 EV2-016（Transaction Core 加入后再次 B1）路径同形，无法区分哪个是 EV1 Foundation Baseline、哪个是 EV2 Transaction Baseline。
+    - **v1.2 修订（Baseline Profile Identity）**：每份 Measured Baseline 必须含四元身份标识：
+      - `benchmark_profile`：Profile 名（如 `B1-EBCX-BASELINE`）
+      - `benchmark_scenario`：Scenario 名（如 `B1-TX` / `B1-AGENT`，与 TASK-H12 联动）
+      - `baseline_stage`：阶段标识（如 `EV1-FOUNDATION` / `EV2-TRANSACTION-CORE` / `EV2-AGENT-RUNTIME`）
+      - `baseline_version`：版本号（从 `1.0` 起递增）
+    - **TASK-H13 Baseline 路径升级（含 stage 区分）**：
+      `{repo}/benchmarks/baselines/b1/{scenario}/{stage}/v{version}.json`
+      - 本任务产出：`{repo}/benchmarks/baselines/b1/B1-TX/EV1-FOUNDATION/v1.0.json`
+      - EV2-016 产出：`{repo}/benchmarks/baselines/b1/B1-TX/EV2-TRANSACTION-CORE/v2.0.json` + `{repo}/benchmarks/baselines/b1/B1-AGENT/EV2-AGENT-RUNTIME/v1.0.json`
+    - **TASK-H13 版本关系链（锁定）**：
+      ```
+      Target 不变（TPS ≥2000 / P95 ≤500ms / Error ≤0.1%）
+            ↓
+      EV1 Measured Baseline (v1.0, stage=EV1-FOUNDATION, scenario=B1-TX)
+            ↓
+      EV2 Measured Baseline (v2.0, stage=EV2-TRANSACTION-CORE, scenario=B1-TX)
+            ↓
+      比较增量（回答"Transaction Core 给系统增加了多少性能成本"：
+               ΔTPS = v2.0.measured.tps - v1.0.measured.tps
+               ΔP95 = v2.0.measured.p95_ms - v1.0.measured.p95_ms）
+      ```
+    - **关键约束**：Target 在版本关系链中保持不变（同一 B1-EBCX-BASELINE Profile），仅 Measured 随 stage 演进。比较增量前必须校验两份 Baseline 的 `benchmark_profile` 与 `benchmark_scenario` 一致。
+  - 产出 Measured Baseline 至 `{repo}/benchmarks/baselines/b1/B1-TX/EV1-FOUNDATION/v1.0.json`（TASK-H13 路径升级）
   - 验证 B1 Target：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
   - 若未达成，分析瓶颈并优化（不允许降低 B1 Target，必须绑定 B1-EBCX-BASELINE Profile）
   - **TASK-H06 关键约束**：
@@ -835,9 +872,12 @@ EV0-TASKS Gate 评审
   - [ ] B1 Scenario 执行成功
   - [ ] Measured Baseline 产出并版本化
   - [ ] **TASK-H06 Target 与 Measured 分离验证**：报告 JSON 中 measured 字段为实际测量值（非 target 值填充）
+  - [ ] **TASK-H13 Baseline Profile Identity 验证**：报告 JSON 含 `benchmark_profile=B1-EBCX-BASELINE` / `benchmark_scenario=B1-TX` / `baseline_stage=EV1-FOUNDATION` / `baseline_version=1.0` 四元身份标识
+  - [ ] **TASK-H13 Baseline 路径验证**：Measured Baseline 产出至 `{repo}/benchmarks/baselines/b1/B1-TX/EV1-FOUNDATION/v1.0.json`（含 scenario + stage + version 路径分段，可与 EV2-016 产出区分）
+  - [ ] **TASK-H13 版本关系链验证**：baseline_lineage.predecessor = null（EV1 为首版本），successor 指向 EV2-TRANSACTION-CORE v2.0，target_unchanged = true
   - [ ] B1 Target 达成：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
   - [ ] 若未达成，瓶颈分析报告 + 优化措施
-- **Evidence 产出**：`evidence/ev1/EBCX-EV1-023-b1-baseline-evidence.json`（含 B1 压测报告、**结构化 Measured Baseline JSON（target/measured 分离）**、Target 达成验证、瓶颈分析（若有），符合 TASK-H07 Physical Evidence 最小字段标准）
+- **Evidence 产出**：`evidence/ev1/EBCX-EV1-023-b1-baseline-evidence.json`（含 B1 压测报告、**结构化 Measured Baseline JSON（target/measured 分离 + Baseline Profile Identity 四元标识 + 版本关系链）**、Target 达成验证、瓶颈分析（若有），符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-016、EBCX-EV1-022、EBCX-EV1-009、EBCX-EV1-012
 - **遵守红线**：TASK-R08（B1 必须有 Benchmark Harness）、TASK-R09（Evidence First）、TASK-R10（Digital Engineering 闭环）
 
@@ -1216,40 +1256,211 @@ EV0-TASKS Gate 评审
 - **依赖任务**：EBCX-EV1-017、EBCX-EV2-009、EBCX-EV2-013
 - **遵守红线**：TASK-R05、TASK-R07、TASK-R09
 
-### EBCX-EV2-015：实现 B2~B5 Profile 预留框架
+### EBCX-EV2-015：实现 B2~B5 Profile 预留框架（Reserved 语义收口）
 - **关联 spec.md**：§4.1 规则 3（B1~B5 Profile）
 - **关联 design.md**：D21 Benchmark Architecture、D-GATE-04（B2~B5 预留框架）
+- **TASK-H 修订**：TASK-H11（B2~B5 Benchmark Reserved / Executable 语义收口）
 - **实现内容**：
   - 预留 B2-Standard-Enterprise Profile（8 vCPU / 32 GB / 10 租户 / 2000 用户 / 500 并发 / P95≤800ms / ≥500 TPS）
   - 预留 B3-Large-Enterprise Profile（32 vCPU / 128 GB / 200 租户 / 50000 用户 / 5000 并发 / P95≤1s / ≥5000 TPS）
   - 预留 B4-High-Concurrency Profile（64 vCPU / 256 GB / 500 租户 / 100000 用户 / 10000 并发 / P95≤2s / ≥10000 TPS）
   - 预留 B5-Extreme Profile（定制 / profile-defined）
-  - 各 Profile 框架可执行但 Target 待后续 EV 细化
-- **验收标准**：
-  - [ ] B2~B5 Profile 框架全部预留
-  - [ ] 各 Profile 可执行（Target 待细化）
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-015-b2-b5-evidence.json`
-- **依赖任务**：EBCX-EV1-016
-- **遵守红线**：TASK-R08
+  - **TASK-H11 B2~B5 Reserved / Executable 语义收口（锁定）**：
+    - **v1.1 问题**：v1.1 写"各 Profile 框架可执行但 Target 待后续 EV 细化"，同时验收"B2~B5 Profile 框架全部预留""各 Profile 可执行（Target 待细化）"——逻辑矛盾。Target 未锁定的 Profile 可 Schema-valid / Config-valid / Harness-valid / Dry-run，但**不能称为"Benchmark executable / 达标验证"**。否则会出现"B2 可执行 → 跑出结果 → 宣布 B2 PASS"的漏洞。
+    - **v1.2 修订（Reserved vs Executable 严格分离）**：
+      ```
+      B2~B5：
 
-### EBCX-EV2-016：执行 B1 Benchmark（含 Transaction Core）+ Measured Baseline 🔴 关键
+      当前阶段：
+        Profile Schema / Harness / Configuration Reserved
+
+      允许（Reserved 框架可做的四件事）：
+        - profile validation          （Profile Schema 校验通过）
+        - workload schema validation  （Workload 定义 Schema-valid）
+        - harness dry-run            （Harness 空跑/冒烟跑通，不产生正式 Baseline）
+        - configuration validation   （硬件/并发/数据集配置校验通过）
+
+      禁止（Reserved 框架不得做的三件事）：
+        - 宣布 benchmark PASS
+        - 宣布 Target achieved
+        - 形成正式 performance baseline
+
+      只有对应 EV 阶段重新 Requirement → Design → Task 后，
+      才能锁定 Target 并执行正式 Benchmark。
+      ```
+    - **关键原则（锁定）**：
+      - **Reserved ≠ Executable**：Reserved 框架可 Schema-valid / Config-valid / Harness-valid / Dry-run，但**不等于 Benchmark Executable**。Benchmark Executable 要求 Target 已锁定 + 正式压测 + Measured Baseline 产出。
+      - **Target 未锁定 → 禁止宣布 PASS**：B2~B5 的 Target（如 B2 的 P95≤800ms / ≥500 TPS）在当前阶段为**预留值**，未经对应 EV 阶段 Requirement → Design → Task 流程正式锁定，**不得作为达标判定依据**。
+      - **Dry-run ≠ Benchmark Execution**：Harness dry-run 是框架自检（验证 Load Generator / Dataset / Scenario / Measurement / Report 链路通），**不产生正式 Measured Baseline**，**不宣布 Target 达成**。
+      - **正式 Benchmark 解锁条件**：对应 EV 阶段（如 B2 对应的 EV 阶段）必须重新执行 Requirement → Design → Task 三阶段完整流程，锁定 Target 后才可执行正式 Benchmark 并宣布 PASS/FAIL。
+    - **与 TASK-H10 联动**：B2~B5 的正式 Benchmark 解锁条件与 TASK-H10（EV3~EV12 Milestone Placeholder）一致——不得跳过对应 EV 的 Requirement → Design → Task 流程直接宣布 Benchmark PASS。
+- **验收标准**：
+  - [ ] B2~B5 Profile 框架全部预留（Schema + Harness + Configuration 定义完成）
+  - [ ] **TASK-H11 Reserved 框架四项允许行为验证**：
+    - [ ] profile validation 通过（B2~B5 Profile Schema 校验）
+    - [ ] workload schema validation 通过（Workload 定义 Schema-valid）
+    - [ ] harness dry-run 通过（Harness 空跑/冒烟跑通，**不产生正式 Measured Baseline**）
+    - [ ] configuration validation 通过（硬件/并发/数据集配置校验）
+  - [ ] **TASK-H11 Reserved 框架三项禁止行为验证**：
+    - [ ] B2~B5 不得宣布 benchmark PASS（无 PASS 标记产出）
+    - [ ] B2~B5 不得宣布 Target achieved（无 Target 达成声明产出）
+    - [ ] B2~B5 不得形成正式 performance baseline（无 Measured Baseline JSON 产出至 `{repo}/benchmarks/baselines/b{2~5}/` 路径）
+  - [ ] **TASK-H11 Reserved ≠ Executable 语义验证**：B2~B5 框架标注为 `Reserved`，不得标注为 `Executable` 或 `PASS`
+  - [ ] **TASK-H11 Dry-run ≠ Benchmark Execution 验证**：harness dry-run 产出为 `dry-run-report`（非 `measured-baseline`），不含 Target 达成判定
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-015-b2-b5-evidence.json`（含 B2~B5 Profile 预留框架定义、**Reserved 语义收口验证（四项允许 + 三项禁止 + Reserved ≠ Executable + Dry-run ≠ Benchmark Execution）**、profile/workload/harness/config 校验报告、dry-run 报告（非正式 Baseline），符合 TASK-H07 Physical Evidence 最小字段标准）
+- **依赖任务**：EBCX-EV1-016
+- **遵守红线**：TASK-R08（B1 性能指标必须有 Benchmark Harness，B2~B5 Reserved 框架亦需 Harness）、TASK-R09（Evidence First）
+
+### EBCX-EV2-016：执行 B1 Benchmark（B1-TX + B1-AGENT 双 Scenario）+ Measured Baseline 🔴 关键
 - **关联 spec.md**：§4.1 规则 3
 - **关联 design.md**：D21 Benchmark Architecture、D-GATE-04
+- **TASK-H 修订**：TASK-H12（B1 Transaction Core / Agent Benchmark Scenario 分离）+ TASK-H13（B1 Baseline Identity / Version / Stage Lineage）
 - **实现内容**：
-  - 在 EV1 B1 基础上加入 Transaction Core 完整链路（Order + Contract + Invoice + Payment + Orchestrator + Policy + Agent + Evidence）
-  - 执行 B1 Scenario（Transaction Mix: Order 40% / Contract 20% / Invoice 20% / Payment 20%）
-  - 测量 P50/P95/P99/TPS/ErrorRate
-  - 产出 Measured Baseline 至 `{repo}/benchmarks/baselines/b1/{date}.json`
-  - 验证 B1 Target：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
-  - 验证 Graph Projection Normal Mode P95 lag ≤3s
+  - **TASK-H12 B1 双 Scenario 拆分（锁定，最重要）**：
+    - **v1.1 问题**：v1.1 把 Order + Contract + Invoice + Payment + Orchestrator + Policy + Agent + Evidence 塞进同一个 B1（TPS≥2000 / P95≤500ms），而 Agent Runtime 自身规定"同步≤2s 或异步 Task ID"。**Transaction Core P95≤500ms 和 Agent Execution≤2s 不是同一个性能对象**。混在一起无法知道 500ms 到底在测 Transaction Core 还是 Agentic ERP。
+    - **v1.2 修订（B1 拆分为两个 Scenario，测量对象严格分离）**：
+
+      **B1-TX（Transaction Core Benchmark）**：
+      ```
+      Scope:  Order + Contract + Invoice + Payment + Policy + Evidence + Outbox
+              （Transaction Core 完整链路，不含 Agent 执行环节）
+      Metrics: TPS / P50 / P95 / P99 / Error Rate / Evidence EPS
+      Target:  TPS ≥ 2000 / P95 ≤ 500ms / Error ≤ 0.1%
+      ```
+      回答的问题：**"Transaction Core 性能是多少？"**
+
+      **B1-AGENT（Agentic ERP Benchmark）**：
+      ```
+      Scope:  Agent → Reason → Policy → Approval → Authorize → Execute → Verify → Evidence
+              （Governed Agent 完整执行链，含三重治理 + Authorization + Independent Verification）
+      Metrics: sync latency / async acceptance latency / authorization latency /
+               verification latency / end-to-end completion time
+      Target:  ≤2s（同步路径）或异步返回 Task ID（异步路径）
+      ```
+      回答的问题：**"Agentic ERP 性能是多少？"**
+
+    - **关键原则（锁定）**：
+      - **两个 Scenario 测量对象不同，不得合并为一个数字**：B1-TX 测 Transaction Core 吞吐与延迟，B1-AGENT 测 Agent 执行链端到端延迟。**禁止把 B1-TX 的 P95≤500ms 当作 B1-AGENT 的达标依据**，反之亦然。
+      - **Target 分离**：B1-TX Target = TPS≥2000 / P95≤500ms / Error≤0.1%；B1-AGENT Target = ≤2s 或异步 Task ID。两套 Target 独立判定，互不替代。
+      - **Scope 分离**：B1-TX Scope 不含 Agent 执行环节（Agent 在 B1-TX 中仅作为 Policy 裁决的可能触发者，不测 Agent 执行延迟）；B1-AGENT Scope 不含 Transaction Core 吞吐（Transaction Core 在 B1-AGENT 中仅作为 Execute 阶段的可能调用对象，不测 TPS）。
+      - **与 EV2-012/013 联动**：B1-AGENT 的 Target ≤2s 与 EBCX-EV2-012（Agent Runtime 同步路径 ≤2s 或异步返回任务 ID）+ EBCX-EV2-013（Agent Execution Authorization 模型）一致，测的是同一性能对象。
+  - **B1-TX Scenario 执行**：
+    - 在 EV1 B1 基础上加入 Transaction Core 完整链路（Order + Contract + Invoice + Payment + Orchestrator + Policy + Evidence + Outbox）
+    - 执行 B1-TX Scenario（Transaction Mix: Order 40% / Contract 20% / Invoice 20% / Payment 20%）
+    - 测量 P50/P95/P99/TPS/ErrorRate/Evidence EPS
+    - 验证 B1-TX Target：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
+    - 验证 Graph Projection Normal Mode P95 lag ≤3s
+  - **B1-AGENT Scenario 执行**：
+    - 执行 B1-AGENT Scenario（Agent → Reason → Policy → Approval → Authorize → Execute → Verify → Evidence 完整链路）
+    - 测量 sync latency / async acceptance latency / authorization latency / verification latency / end-to-end completion time
+    - 验证 B1-AGENT Target：同步路径 ≤2s 或异步返回 Task ID
+  - **TASK-H13 产出双 Scenario Measured Baseline（含 Baseline Profile Identity）**：
+
+    **B1-TX Measured Baseline**：
+    ```json
+    {
+      "benchmark_profile": "B1-EBCX-BASELINE",
+      "benchmark_scenario": "B1-TX",
+      "baseline_stage": "EV2-TRANSACTION-CORE",
+      "baseline_version": "2.0",
+      "baseline_lineage": {
+        "predecessor": "EV1-FOUNDATION v1.0",
+        "successor": null,
+        "target_unchanged": true
+      },
+      "target": {
+        "tps": 2000,
+        "p95_ms": 500,
+        "error_rate": 0.001
+      },
+      "measured": {
+        "tps": "<actual measured value>",
+        "p95_ms": "<actual measured value>",
+        "error_rate": "<actual measured value>",
+        "evidence_eps": "<actual measured value>"
+      },
+      "scope": "Order + Contract + Invoice + Payment + Policy + Evidence + Outbox",
+      "hardware": "...",
+      "dataset": "...",
+      "concurrency": 2000,
+      "consistency_mode": "synchronous replication enabled",
+      "evidence_write_ratio": 1.0,
+      "graph_projection_mode": "async Normal Mode"
+    }
+    ```
+    产出至 `{repo}/benchmarks/baselines/b1/B1-TX/EV2-TRANSACTION-CORE/v2.0.json`
+
+    **B1-AGENT Measured Baseline**：
+    ```json
+    {
+      "benchmark_profile": "B1-EBCX-BASELINE",
+      "benchmark_scenario": "B1-AGENT",
+      "baseline_stage": "EV2-AGENT-RUNTIME",
+      "baseline_version": "1.0",
+      "baseline_lineage": {
+        "predecessor": null,
+        "successor": null,
+        "target_unchanged": true
+      },
+      "target": {
+        "sync_latency_ms": 2000,
+        "async_mode": "Task ID returned"
+      },
+      "measured": {
+        "sync_latency_ms": "<actual measured value>",
+        "async_acceptance_latency_ms": "<actual measured value>",
+        "authorization_latency_ms": "<actual measured value>",
+        "verification_latency_ms": "<actual measured value>",
+        "end_to_end_completion_ms": "<actual measured value>"
+      },
+      "scope": "Agent → Reason → Policy → Approval → Authorize → Execute → Verify → Evidence",
+      "hardware": "...",
+      "dataset": "...",
+      "consistency_mode": "synchronous replication enabled",
+      "evidence_write_ratio": 1.0,
+      "graph_projection_mode": "async Normal Mode"
+    }
+    ```
+    产出至 `{repo}/benchmarks/baselines/b1/B1-AGENT/EV2-AGENT-RUNTIME/v1.0.json`
+
+  - **TASK-H13 版本关系链（B1-TX，与 EV1-023 联动）**：
+    ```
+    Target 不变（TPS ≥2000 / P95 ≤500ms / Error ≤0.1%）
+          ↓
+    EV1 Measured Baseline (v1.0, stage=EV1-FOUNDATION, scenario=B1-TX)
+        ← 产出方：EBCX-EV1-023
+          ↓
+    EV2 Measured Baseline (v2.0, stage=EV2-TRANSACTION-CORE, scenario=B1-TX)
+        ← 产出方：EBCX-EV2-016（本任务）
+          ↓
+    比较增量（回答"Transaction Core 给系统增加了多少性能成本"：
+             ΔTPS = v2.0.measured.tps - v1.0.measured.tps
+             ΔP95 = v2.0.measured.p95_ms - v1.0.measured.p95_ms）
+    ```
+  - **TASK-H13 B1-AGENT 版本关系链**：
+    ```
+    B1-AGENT 首版本 (v1.0, stage=EV2-AGENT-RUNTIME)
+        ← 产出方：EBCX-EV2-016（本任务）
+        ← predecessor: null（EV2 首次引入 Agent Runtime，无前序版本）
+          ↓
+    后续 EV 阶段（如 EV9 Agent Runtime 完整里程碑）可产出 v2.0
+    ```
 - **验收标准**：
-  - [ ] B1 Scenario（含 Transaction Core）执行成功
-  - [ ] Measured Baseline 产出并版本化
-  - [ ] B1 Target 达成：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
-  - [ ] Graph Projection P95 lag ≤3s（Normal Mode）
-- **Evidence 产出**：`evidence/ev2/EBCX-EV2-016-b1-baseline-evidence.json`
+  - [ ] **TASK-H12 B1-TX Scenario 执行成功**：Transaction Core 完整链路（Order + Contract + Invoice + Payment + Policy + Evidence + Outbox）压测完成
+  - [ ] **TASK-H12 B1-AGENT Scenario 执行成功**：Governed Agent 完整执行链（Agent → Reason → Policy → Approval → Authorize → Execute → Verify → Evidence）压测完成
+  - [ ] **TASK-H12 双 Scenario 测量对象分离验证**：B1-TX 报告不含 Agent 执行延迟指标，B1-AGENT 报告不含 Transaction Core TPS 指标，**两者不得合并为一个数字**
+  - [ ] **TASK-H12 Target 分离验证**：B1-TX Target（TPS≥2000 / P95≤500ms / Error≤0.1%）与 B1-AGENT Target（≤2s 或异步 Task ID）独立判定，互不替代
+  - [ ] **B1-TX Target 达成**：TPS ≥2000 / P95 ≤500ms / Error ≤0.1%
+  - [ ] **B1-AGENT Target 达成**：同步路径 ≤2s 或异步返回 Task ID
+  - [ ] Graph Projection P95 lag ≤3s（Normal Mode，B1-TX 场景）
+  - [ ] **TASK-H13 B1-TX Baseline Profile Identity 验证**：报告 JSON 含 `benchmark_profile=B1-EBCX-BASELINE` / `benchmark_scenario=B1-TX` / `baseline_stage=EV2-TRANSACTION-CORE` / `baseline_version=2.0`，predecessor 指向 EV1-FOUNDATION v1.0
+  - [ ] **TASK-H13 B1-AGENT Baseline Profile Identity 验证**：报告 JSON 含 `benchmark_profile=B1-EBCX-BASELINE` / `benchmark_scenario=B1-AGENT` / `baseline_stage=EV2-AGENT-RUNTIME` / `baseline_version=1.0`，predecessor = null
+  - [ ] **TASK-H13 Baseline 路径验证**：B1-TX 产出至 `{repo}/benchmarks/baselines/b1/B1-TX/EV2-TRANSACTION-CORE/v2.0.json`，B1-AGENT 产出至 `{repo}/benchmarks/baselines/b1/B1-AGENT/EV2-AGENT-RUNTIME/v1.0.json`（含 scenario + stage + version 路径分段）
+  - [ ] **TASK-H13 版本关系链增量比较验证**：B1-TX v2.0 与 EV1-023 产出的 v1.0 可比较增量（ΔTPS / ΔP95），回答"Transaction Core 给系统增加了多少性能成本"，比较前校验 benchmark_profile + benchmark_scenario 一致
+  - [ ] Measured Baseline 双份产出并版本化
+- **Evidence 产出**：`evidence/ev2/EBCX-EV2-016-b1-baseline-evidence.json`（含 **B1-TX + B1-AGENT 双 Scenario 压测报告**、**双份结构化 Measured Baseline JSON（含 Baseline Profile Identity 四元标识 + 版本关系链）**、双 Target 达成验证、版本关系链增量比较，符合 TASK-H07 Physical Evidence 最小字段标准）
 - **依赖任务**：EBCX-EV1-023、EBCX-EV2-014
-- **遵守红线**：TASK-R08、TASK-R09、TASK-R10
+- **遵守红线**：TASK-R08（B1 必须有 Benchmark Harness）、TASK-R09（Evidence First）、TASK-R10（Digital Engineering 闭环）
 
 ### EBCX-EV2-017：EV2 Gate 评审准备
 - **关联 spec.md**：§5.10 EV2 Gate、§5.12.1 红线七
@@ -1628,7 +1839,7 @@ EV0-TASKS Gate 评审
 | D-GATE-07 | Agent Execution Authorization 模型 | EBCX-EV2-013 | ✅ Agent→Reason→Policy→Approval→Authorize→Execute→Verify→Evidence + Independent Verifier |
 | D-GATE-08 | 13/14/6 五层层级关系 | EBCX-EV1-001 | ✅ 五层层级体系 + 13→14 差异来源明确 |
 
-## 7.4 TASK-H01~H10 Task Hardening 覆盖校验（v1.1 新增）
+## 7.4 TASK-H01~H13 Task Hardening 覆盖校验（v1.2 更新）
 
 | TASK-H | 主题 | 覆盖任务 | 校验结果 |
 |---|---|---|---|---|
@@ -1642,10 +1853,13 @@ EV0-TASKS Gate 评审
 | TASK-H08 | EV2-001~004 允许并行开发 | EBCX-EV2-001~004 | ✅ 解除串行依赖，四个聚合根并行实现，前提是 Domain Event 契约（EV1-019）已冻结，Orchestrator 在四者完成后编排 |
 | TASK-H09 | Policy Engine 与 Neo4j 故障隔离 / Fail-Closed | EBCX-EV2-010 | ✅ Neo4j 故障时 Policy Engine 不崩溃 + Fail-Closed（绝不放行）+ Evidence Truth fallback + 绝对禁止 Neo4j down → Transaction Core down |
 | TASK-H10 | EV3~EV12 标记为 Milestone Placeholder | §三 EV3~EV12 章节 | ✅ 正式定义 Milestone Gate Placeholder + 进入前必须重新执行 Requirement→Design→Task + 禁止直接编码 |
+| TASK-H11 | B2~B5 Benchmark Reserved / Executable 语义收口 | EBCX-EV2-015 | ✅ Reserved vs Executable 严格分离（四项允许：profile/workload/harness dry-run/config validation + 三项禁止：宣布 PASS/Target achieved/正式 baseline）+ Reserved ≠ Executable + Dry-run ≠ Benchmark Execution + 正式 Benchmark 解锁条件（对应 EV 重新 Requirement→Design→Task）+ 与 TASK-H10 联动 |
+| TASK-H12 | B1 Transaction Core / Agent Benchmark Scenario 分离 | EBCX-EV2-016 | ✅ B1 拆分为 B1-TX（Transaction Core，TPS≥2000/P95≤500ms）+ B1-AGENT（Agentic ERP，≤2s 或异步 Task ID）双 Scenario + 测量对象严格分离（不得合并为一个数字）+ Target 分离 + Scope 分离 + 与 EV2-012/013 联动 |
+| TASK-H13 | B1 Baseline Identity / Version / Stage Lineage | EBCX-EV1-023、EBCX-EV2-016 | ✅ Baseline Profile Identity 四元标识（benchmark_profile + benchmark_scenario + baseline_stage + baseline_version）+ 路径升级（含 scenario/stage/version 分段）+ 版本关系链（EV1-FOUNDATION v1.0 → EV2-TRANSACTION-CORE v2.0 → 增量比较）+ B1-AGENT 首版本（EV2-AGENT-RUNTIME v1.0）+ Target 不变约束 |
 | 附加修订1 | Evidence 三类分类 | EBCX-EV2-005 | ✅ Mandatory/Decision/Execution 三类 + 11 阶段 Evidence 产生规则 + Evidence-First 而非 Evidence-Everything + 写放大可控 |
 | 附加修订2 | DAG 并行度优化 | §任务依赖 DAG | ✅ EV1 内部高并行 DAG + EV2-001~004 并行 + Critical Path 缩短 |
 
-**一致性校验结论**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening + TASK-H01~H10 全部 10 项 Task Hardening + 2 项附加修订均被任务覆盖，无遗漏，无矛盾，无漂移。
+**一致性校验结论**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening + TASK-H01~H13 全部 13 项 Task Hardening + 2 项附加修订均被任务覆盖，无遗漏，无矛盾，无漂移。TASK-H11~H13（v1.2 新增）补齐 Benchmark/Governance 语义收口，未削弱 TASK-H01~H10（v1.1 已 PASS）。
 
 ---
 
@@ -1664,7 +1878,7 @@ EV0-TASKS Gate 评审
 | TASK-R09 | 所有关键任务必须 Evidence First | 全部关键任务（含 Unit Test → Integration Test → Physical Verification → Evidence → Gate） | ✅ 每个关键任务含 Evidence 产出，Physical Verification 必须产生 Physical Evidence |
 | TASK-R10 | 最终必须形成 Digital Engineering 闭环 | EBCX-REVIEW-003（变更确认） | ✅ Requirement → Design Decision → Task → Code → Test → Evidence → Verification → Closure 闭环验证 |
 
-**10 条施工红线遵守结论**：TASK-R01~R10 全部 10 条施工红线均被任务严格遵守，无违反。Task Hardening（TASK-H01~H10 + 2 项附加修订）进一步增强红线落地强度，未削弱任何红线。
+**10 条施工红线遵守结论**：TASK-R01~R10 全部 10 条施工红线均被任务严格遵守，无违反。Task Hardening（TASK-H01~H13 + 2 项附加修订）进一步增强红线落地强度，未削弱任何红线。TASK HARDENING-002（v1.2 新增 TASK-H11~H13）仅对 Benchmark/Governance 语义收口，未削弱任何红线。
 
 ---
 
@@ -1708,7 +1922,7 @@ EBCX-EV1-019 实现 Event Contract + Schema Registry
 EBCX-EV1-020 实现 CQRS Command/Query 分离基础
 EBCX-EV1-021 实现 DevSecOps CI/CD 流水线
 EBCX-EV1-022 实现 IaC 基础设施
-EBCX-EV1-023 执行 B1 Benchmark 首次压测 + Measured Baseline 🔴（TASK-H06）
+EBCX-EV1-023 执行 B1 Benchmark 首次压测 + Measured Baseline + Baseline Profile Identity 🔴（TASK-H06 + TASK-H13）
 EBCX-EV1-024 EV1 Gate 评审准备
 ```
 
@@ -1729,8 +1943,8 @@ EBCX-EV2-011 实现 Approval 聚合根（一等公民）
 EBCX-EV2-012 实现 Agent Runtime 基础（三重治理）
 EBCX-EV2-013 实现 Agent Execution Authorization 模型 🔴
 EBCX-EV2-014 实现 REST API Transaction/Evidence/Policy/Agent/Graph
-EBCX-EV2-015 实现 B2~B5 Profile 预留框架
-EBCX-EV2-016 执行 B1 Benchmark + Measured Baseline 🔴
+EBCX-EV2-015 实现 B2~B5 Profile 预留框架（Reserved/Executable 语义收口）（TASK-H11）
+EBCX-EV2-016 执行 B1 Benchmark 双 Scenario + Measured Baseline 🔴（TASK-H12 + TASK-H13）
 EBCX-EV2-017 EV2 Gate 评审准备
 ```
 
@@ -1742,11 +1956,12 @@ EBCX-EV2-017 EV2 Gate 评审准备
 - EBCX-EV1-005A Graph Reconciliation（TASK-H05 新增）
 - EBCX-EV1-014 24 Entity Graph Contract（TASK-R06）
 - EBCX-EV1-016 Benchmark Harness + Target/Measured 分离（TASK-R08 + TASK-H06）
-- EBCX-EV1-023 B1 Benchmark 首次执行（TASK-R08/R10 + TASK-H06）
+- EBCX-EV1-023 B1 Benchmark 首次执行 + Baseline Profile Identity（TASK-R08/R10 + TASK-H06 + TASK-H13）
 - EBCX-EV2-005 Orchestrator 11 阶段编排 + Evidence 三类分类（TASK-R03/R05 + 附加修订1）
 - EBCX-EV2-010 Policy Engine + Neo4j 故障隔离（TASK-R07 + TASK-H09）
 - EBCX-EV2-013 Agent Authorization 模型（TASK-R07）
-- EBCX-EV2-016 B1 Benchmark 含 Transaction Core（TASK-R08/R10）
+- EBCX-EV2-015 B2~B5 Reserved/Executable 语义收口（TASK-R08 + TASK-H11）
+- EBCX-EV2-016 B1 Benchmark 双 Scenario + Baseline Profile Identity（TASK-R08/R10 + TASK-H12 + TASK-H13）
 
 ---
 
@@ -1757,7 +1972,7 @@ Requirement（spec.md v1.1）
     ↓
 Design Decision（design.md v1.1，D01~D24 + D-GATE-01~08）
     ↓
-Task（tasks.md v1.1，60 个任务，含 TASK-H01~H10 + 2 项附加修订）
+Task（tasks.md v1.2，60 个任务，含 TASK-H01~H13 + 2 项附加修订）
     ↓
 Code（EV1 + EV2 实现）
     ↓
@@ -1765,12 +1980,12 @@ Test（Unit Test + Integration Test + E2E Test）
     ↓
 Evidence（Physical Evidence，每个任务产出，符合 TASK-H07 最小字段标准）
     ↓
-Verification（Physical Verification + B1 Benchmark + 一致性校验 + Hash Chain 校验 + Graph Reconciliation）
+Verification（Physical Verification + B1 Benchmark 双 Scenario + Baseline Profile Identity + 一致性校验 + Hash Chain 校验 + Graph Reconciliation）
     ↓
 Closure（EV1 Gate + EV2 Gate + 评审验证）
 ```
 
-**闭环验证结论**：Digital Engineering 闭环完整，每个环节均有 Physical Evidence 产出（符合 TASK-H07 最小字段标准），可追溯、可审计、可验证。
+**闭环验证结论**：Digital Engineering 闭环完整，每个环节均有 Physical Evidence 产出（符合 TASK-H07 最小字段标准），可追溯、可审计、可验证。v1.2 新增 TASK-H11~H13（Benchmark/Governance 语义收口）增强 Benchmark 语义严谨性，未削弱 v1.1 已 PASS 的 TASK-H01~H10。
 
 ---
 
@@ -1867,18 +2082,18 @@ Closure（EV1 Gate + EV2 Gate + 评审验证）
 
 ## 文档结束
 
-> 本 tasks.md v1.1 基于 spec.md v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN）+ design.md v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN）生成，执行 TASK HARDENING-001 补齐 TASK-H01~H10 + 2 项附加修订，覆盖 EV1~EV12 全部阶段任务，重点细化 EV1 Enterprise Core（25 个任务，含新增 EBCX-EV1-005A）与 EV2 Transaction Core（17 个任务），EV3~EV12 为里程碑级任务（10 个，Milestone Gate Placeholder）。
+> 本 tasks.md v1.2 基于 spec.md v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN）+ design.md v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN）生成，执行 TASK HARDENING-002 补齐 TASK-H11~H13（Benchmark/Governance 语义收口），保留 TASK-H01~H10 + 2 项附加修订，覆盖 EV1~EV12 全部阶段任务，重点细化 EV1 Enterprise Core（25 个任务，含新增 EBCX-EV1-005A）与 EV2 Transaction Core（17 个任务），EV3~EV12 为里程碑级任务（10 个，Milestone Gate Placeholder）。
 >
-> **任务统计**：60 个任务（EV1: 25 + EV2: 17 + EV3~EV12: 10 + 集成测试: 3 + 部署配置: 2 + 评审验证: 3）。
+> **任务统计**：60 个任务（EV1: 25 + EV2: 17 + EV3~EV12: 10 + 集成测试: 3 + 部署配置: 2 + 评审验证: 3）。任务总数与 v1.1 一致，TASK HARDENING-002 未新增/删除任务，仅对 EBCX-EV1-023 / EBCX-EV2-015 / EBCX-EV2-016 三项做语义收口。
 >
-> **Task Hardening 修订**：TASK-H01~H10 全部 10 项 + 2 项附加修订（Evidence 三类分类 + DAG 并行度优化）全部落实，骨架未削弱。
+> **Task Hardening 修订**：TASK-H01~H13 全部 13 项 + 2 项附加修订（Evidence 三类分类 + DAG 并行度优化）全部落实，骨架未削弱。v1.2 新增 TASK-H11（B2~B5 Reserved/Executable 语义收口）+ TASK-H12（B1-TX/B1-AGENT 双 Scenario 分离）+ TASK-H13（Baseline Profile Identity / Version / Stage Lineage），补齐 Benchmark/Governance 语义漏洞，未削弱 v1.1 已 PASS 的 TASK-H01~H10。
 >
-> **一致性校验**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening + TASK-H01~H10 全部 10 项 Task Hardening + 2 项附加修订均被任务覆盖，无遗漏，无矛盾，无漂移。
+> **一致性校验**：spec.md §4.1~§5.13 全部 18 个章节 + design.md D01~D24 全部 24 项 + D-GATE-01~08 全部 8 项 Architecture Hardening + TASK-H01~H13 全部 13 项 Task Hardening + 2 项附加修订均被任务覆盖，无遗漏，无矛盾，无漂移。
 >
-> **10 条施工红线**：TASK-R01~R10 全部 10 条施工红线均被任务严格遵守，无违反。
+> **10 条施工红线**：TASK-R01~R10 全部 10 条施工红线均被任务严格遵守，无违反。TASK HARDENING-002 未削弱任何红线。
 >
 > **8 条架构红线 + 7 条母架构约束**：全部对齐，无漂移。
 >
 > **Digital Engineering 闭环**：Requirement → Design Decision → Task → Code → Test → Evidence → Verification → Closure 闭环完整，Physical Evidence 符合 TASK-H07 最小字段标准。
 >
-> **后续阶段**：EV1 编码须在 EV0-G0 Gate 通过后方可启动。本 tasks.md v1.1 待大G项目经理体系 EV0-TASKS Gate 复审。
+> **后续阶段**：EV1 编码须在 EV0-G0 Gate 通过后方可启动。本 tasks.md v1.2 待大G项目经理体系 EV0-TASKS Gate 复审。
