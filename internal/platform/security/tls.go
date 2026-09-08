@@ -7,25 +7,25 @@ import (
 )
 
 var (
-	ErrTLSVersionTooLow  = errors.New("TLS version below 1.2 — connection rejected")
-	ErrTLSWeakCipher     = errors.New("weak cipher suite detected — connection rejected")
+	ErrTLSVersionTooLow = errors.New("TLS version below 1.2 — connection rejected")
+	ErrTLSWeakCipher    = errors.New("weak cipher suite detected — connection rejected")
 )
 
 var weakCipherSuites = map[uint16]bool{
-	tls.TLS_RSA_WITH_RC4_128_SHA:                true,
-	tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA:           true,
-	tls.TLS_RSA_WITH_AES_128_CBC_SHA:            true,
-	tls.TLS_RSA_WITH_AES_256_CBC_SHA:            true,
+	tls.TLS_RSA_WITH_RC4_128_SHA:      true,
+	tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA: true,
+	tls.TLS_RSA_WITH_AES_128_CBC_SHA:  true,
+	tls.TLS_RSA_WITH_AES_256_CBC_SHA:  true,
 
-	tls.TLS_RSA_WITH_AES_128_GCM_SHA256:         true,
-	tls.TLS_RSA_WITH_AES_256_GCM_SHA384:         true,
-	tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA:          true,
-	tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA:     true,
+	tls.TLS_RSA_WITH_AES_128_GCM_SHA256:     true,
+	tls.TLS_RSA_WITH_AES_256_GCM_SHA384:     true,
+	tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA:      true,
+	tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA: true,
 }
 
 type TLSGateway struct {
-	minVersion    uint16
-	allowedCerts  map[string]bool
+	minVersion   uint16
+	allowedCerts map[string]bool
 }
 
 func NewTLSGateway() *TLSGateway {

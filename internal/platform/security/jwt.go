@@ -10,30 +10,30 @@ import (
 )
 
 var (
-	ErrInvalidToken          = errors.New("invalid JWT token")
-	ErrExpiredToken          = errors.New("JWT token expired")
-	ErrMissingToken          = errors.New("missing JWT token")
-	ErrInvalidIssuer         = errors.New("invalid JWT issuer")
-	ErrInvalidAudience       = errors.New("invalid JWT audience")
-	ErrInsufficientScope     = errors.New("insufficient scope for operation")
-	ErrTokenRevoked          = errors.New("JWT token has been revoked")
+	ErrInvalidToken      = errors.New("invalid JWT token")
+	ErrExpiredToken      = errors.New("JWT token expired")
+	ErrMissingToken      = errors.New("missing JWT token")
+	ErrInvalidIssuer     = errors.New("invalid JWT issuer")
+	ErrInvalidAudience   = errors.New("invalid JWT audience")
+	ErrInsufficientScope = errors.New("insufficient scope for operation")
+	ErrTokenRevoked      = errors.New("JWT token has been revoked")
 )
 
 type Claims struct {
-	TenantID  string   `json:"tenant_id"`
-	UserID    string   `json:"user_id"`
-	OrgID     string   `json:"org_id"`
-	Roles     []string `json:"roles"`
-	Scopes    []string `json:"scopes"`
+	TenantID string   `json:"tenant_id"`
+	UserID   string   `json:"user_id"`
+	OrgID    string   `json:"org_id"`
+	Roles    []string `json:"roles"`
+	Scopes   []string `json:"scopes"`
 	jwt.RegisteredClaims
 }
 
 type AuthGateway struct {
-	signingKey      []byte
-	issuer          string
-	audience        string
-	accessTokenTTL  time.Duration
-	revokedTokens   map[string]time.Time
+	signingKey     []byte
+	issuer         string
+	audience       string
+	accessTokenTTL time.Duration
+	revokedTokens  map[string]time.Time
 }
 
 func NewAuthGateway(signingKey []byte, issuer, audience string, accessTokenTTL time.Duration) *AuthGateway {

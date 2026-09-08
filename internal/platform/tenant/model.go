@@ -7,22 +7,22 @@ import (
 )
 
 var (
-	ErrInvalidCountryPack    = errors.New("invalid country pack")
-	ErrTenantNotFound        = errors.New("tenant not found")
-	ErrPackNotEnabled        = errors.New("country pack not enabled for tenant")
-	ErrCoreTableFork         = errors.New("core table structure forked across country packs")
-	ErrMissingTenantHeader   = errors.New("missing X-Tenant-Id header")
-	ErrMissingPackHeader     = errors.New("missing X-Country-Pack header")
+	ErrInvalidCountryPack  = errors.New("invalid country pack")
+	ErrTenantNotFound      = errors.New("tenant not found")
+	ErrPackNotEnabled      = errors.New("country pack not enabled for tenant")
+	ErrCoreTableFork       = errors.New("core table structure forked across country packs")
+	ErrMissingTenantHeader = errors.New("missing X-Tenant-Id header")
+	ErrMissingPackHeader   = errors.New("missing X-Country-Pack header")
 )
 
 type CountryPack string
 
 const (
-	PackChina  CountryPack = "CN"
-	PackEU     CountryPack = "EU"
-	PackUS     CountryPack = "US"
-	PackJapan  CountryPack = "JP"
-	PackASEAN  CountryPack = "ASEAN"
+	PackChina CountryPack = "CN"
+	PackEU    CountryPack = "EU"
+	PackUS    CountryPack = "US"
+	PackJapan CountryPack = "JP"
+	PackASEAN CountryPack = "ASEAN"
 )
 
 var AllCountryPacks = []CountryPack{PackChina, PackEU, PackUS, PackJapan, PackASEAN}
@@ -37,19 +37,19 @@ func IsValidCountryPack(pack CountryPack) bool {
 }
 
 type Tenant struct {
-	TenantID    string    `json:"tenantId"`
-	TenantName  string    `json:"tenantName"`
-	CountryCode string    `json:"countryCode"`
+	TenantID     string        `json:"tenantId"`
+	TenantName   string        `json:"tenantName"`
+	CountryCode  string        `json:"countryCode"`
 	EnabledPacks []CountryPack `json:"enabledPacks"`
-	CreatedAt   time.Time `json:"createdAt"`
-	IsActive    bool      `json:"isActive"`
+	CreatedAt    time.Time     `json:"createdAt"`
+	IsActive     bool          `json:"isActive"`
 }
 
 type PackExtension struct {
-	PackName      CountryPack `json:"packName"`
-	DisplayName   string      `json:"displayName"`
-	ExtTableSuffix string     `json:"extTableSuffix"`
-	IsActive      bool        `json:"isActive"`
+	PackName       CountryPack `json:"packName"`
+	DisplayName    string      `json:"displayName"`
+	ExtTableSuffix string      `json:"extTableSuffix"`
+	IsActive       bool        `json:"isActive"`
 }
 
 var PackExtensions = []PackExtension{
@@ -87,15 +87,15 @@ func (t *Tenant) IsPackEnabled(pack CountryPack) bool {
 }
 
 type CoreTableSpec struct {
-	TableName  string
-	Columns    []ColumnSpec
+	TableName string
+	Columns   []ColumnSpec
 }
 
 type ColumnSpec struct {
-	Name       string
-	Type       string
-	Nullable   bool
-	IsCore     bool
+	Name     string
+	Type     string
+	Nullable bool
+	IsCore   bool
 }
 
 func ValidateCoreTableNoFork(specs []CoreTableSpec) error {

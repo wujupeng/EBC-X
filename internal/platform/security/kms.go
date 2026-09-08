@@ -22,17 +22,17 @@ var (
 )
 
 type EncryptionKey struct {
-	KeyID      string
-	Key        []byte
-	CreatedAt  time.Time
-	ExpiresAt  time.Time
-	IsActive   bool
+	KeyID     string
+	Key       []byte
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	IsActive  bool
 }
 
 type KMS struct {
-	mu      sync.RWMutex
-	keys    map[string]*EncryptionKey
-	active  string
+	mu     sync.RWMutex
+	keys   map[string]*EncryptionKey
+	active string
 }
 
 func NewKMS() *KMS {

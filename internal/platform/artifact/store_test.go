@@ -1,6 +1,5 @@
 package artifact
 
-
 import (
 	"context"
 	"os"

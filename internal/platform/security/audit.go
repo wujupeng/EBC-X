@@ -14,18 +14,18 @@ var (
 )
 
 type AuditEntry struct {
-	AuditID     string    `json:"auditId"`
-	TenantID    string    `json:"tenantId"`
-	UserID      string    `json:"userId"`
-	Action      string    `json:"action"`
-	Resource    string    `json:"resource"`
-	ResourceID  string    `json:"resourceId"`
-	Decision    string    `json:"decision"`
-	Reason      string    `json:"reason"`
-	IPAddress   string    `json:"ipAddress"`
-	UserAgent   string    `json:"userAgent"`
-	Timestamp   time.Time `json:"timestamp"`
-	Metadata    string    `json:"metadata,omitempty"`
+	AuditID    string    `json:"auditId"`
+	TenantID   string    `json:"tenantId"`
+	UserID     string    `json:"userId"`
+	Action     string    `json:"action"`
+	Resource   string    `json:"resource"`
+	ResourceID string    `json:"resourceId"`
+	Decision   string    `json:"decision"`
+	Reason     string    `json:"reason"`
+	IPAddress  string    `json:"ipAddress"`
+	UserAgent  string    `json:"userAgent"`
+	Timestamp  time.Time `json:"timestamp"`
+	Metadata   string    `json:"metadata,omitempty"`
 }
 
 type AuditLogger interface {

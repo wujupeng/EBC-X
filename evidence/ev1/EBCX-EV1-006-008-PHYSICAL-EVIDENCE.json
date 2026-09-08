@@ -1,0 +1,133 @@
+{
+  "execution_id": "EBCX-EV1-PHY-006-008-20260908-001",
+  "timestamp": "2026-09-08T13:20:00Z",
+  "environment": {
+    "os": "windows/amd64",
+    "go": "go1.26.7",
+    "postgresql": "18.3 (embedded-postgres, real instance)",
+    "test_build_tag": "integration"
+  },
+  "git_commit": "f5625309636b3d9e1e8127e4878518949708076f",
+  "test_commands": [
+    "go test -tags integration ./internal/platform/physicalgate/... -v -count=1 -timeout=120s",
+    "go test -tags integration ./internal/platform/security/... -v -count=1 -timeout=180s -run Physical_RLS"
+  ],
+  "actual_output": {
+    "physicalgate_tests": {
+      "TestPhysical_Migration_AllV1ToV9_Success": "PHYSICAL PASS - V1~V9 all migrations executed on real PostgreSQL 18.3",
+      "TestPhysical_Migration_RLSAndTriggers_Exist": "PHYSICAL PASS - All RLS policies and WORM triggers exist",
+      "TestPhysical006_Artifact_RLS_TenantIsolation": "PHYSICAL PASS - Tenant A sees only A, Tenant B sees only B, unknown sees 0",
+      "TestPhysical006_Artifact_WORM_Triggers": "PHYSICAL PASS - UPDATE and DELETE rejected by PostgreSQL trigger",
+      "TestPhysical006_Artifact_FK_EvidenceRef": "PHYSICAL PASS - valid evidence_id accepted, invalid rejected by FK",
+      "TestPhysical007_Audit_RLS_TenantIsolation": "PHYSICAL PASS - Audit RLS tenant isolation verified",
+      "TestPhysical007_Audit_WOM_Triggers": "PHYSICAL PASS - Audit UPDATE/DELETE rejected by trigger",
+      "TestPhysical007_EvidenceLedger_WOM_Triggers": "PHYSICAL PASS - Evidence Ledger UPDATE/DELETE rejected by trigger",
+      "TestPhysical007_RevokedTokens_RLS": "PHYSICAL PASS - Revoked tokens RLS tenant isolation verified",
+      "TestPhysical008_ExtensionTable_RLS_TenantIsolation": "PHYSICAL PASS - Extension table RLS tenant isolation",
+      "TestPhysical008_CrossTenant_PackIsolation": "PHYSICAL PASS - Cross-tenant Pack isolation (A+EU cannot see B+EU)",
+      "TestPhysical008_AllExtensionTables_RLS": "PHYSICAL PASS - All 5 extension tables have RLS enabled and working",
+      "TestPhysical008_CoreTable_NoFork_SchemaVerification": "PHYSICAL PASS - Core columns consistent across all 5 ext tables",
+      "TestPhysical008_CountryPacks_FiveReserved": "PHYSICAL PASS - 5 Country Packs in PostgreSQL (CN/EU/US/JP/ASEAN)",
+      "total_pass": 14,
+      "total_fail": 0
+    },
+    "rlsmanager_tests": {
+      "TestPhysical_RLSManager_SetTenantContext": "PHYSICAL PASS - RLSManager + RLS policy tenant isolation verified",
+      "TestPhysical_RLSManager_MissingTenant_Error": "PHYSICAL PASS - RLSManager rejects empty tenant_id",
+      "TestPhysical_RLSManager_ClearContext": "PHYSICAL PASS - RLSManager ClearTenantContext succeeds",
+      "TestPhysical_RLSManager_VerifyRLSEnabled": "PHYSICAL PASS - audit_log and metadata have RLS enabled",
+      "total_pass": 4,
+      "total_fail": 0
+    },
+    "grand_total_pass": 18,
+    "grand_total_fail": 0
+  },
+  "physical_verification_results": {
+    "migration": {
+      "status": "PASS",
+      "detail": "V1~V9 all executed successfully on real PostgreSQL 18.3",
+      "schemas_verified": ["business", "evidence", "outbox", "audit", "master_data", "policy", "tenant", "artifact", "security", "graph"],
+      "tables_verified": ["evidence.evidence_ledger", "artifact.metadata", "audit.audit_log", "security.kms_keys", "security.revoked_tokens", "tenant.tenants", "tenant.country_packs", "tenant.tenant_packs", "business.order_cn_ext", "business.order_eu_ext", "business.order_us_ext", "business.order_jp_ext", "business.order_asean_ext"]
+    },
+    "rls": {
+      "status": "PASS",
+      "detail": "RLS verified via SET ROLE ebcx_runtime + SET LOCAL app.tenant_id",
+      "tables_with_rls": ["evidence.evidence_ledger", "artifact.metadata", "audit.audit_log", "security.revoked_tokens", "business.order_cn_ext", "business.order_eu_ext", "business.order_us_ext", "business.order_jp_ext", "business.order_asean_ext"],
+      "tenant_isolation_verified": true,
+      "cross_tenant_negative_test": true
+    },
+    "worm_triggers": {
+      "status": "PASS",
+      "detail": "UPDATE and DELETE rejected by PostgreSQL triggers (not application layer)",
+      "triggers_verified": ["evidence_no_update", "evidence_no_delete", "artifact_no_update", "artifact_no_delete", "audit_no_update", "audit_no_delete"]
+    },
+    "fk_constraints": {
+      "status": "PASS",
+      "detail": "FK from artifact.metadata.evidence_id to evidence.evidence_ledger.evidence_id verified",
+      "valid_ref_accepted": true,
+      "invalid_ref_rejected": true
+    },
+    "pack_isolation": {
+      "status": "PASS",
+      "detail": "Cross-tenant Pack isolation verified (A+EU cannot see B+EU data)",
+      "extension_tables_rls": true
+    },
+    "core_table_no_fork": {
+      "status": "PASS",
+      "detail": "Core columns (order_id, tenant_id, created_at) consistent across all 5 extension tables via information_schema",
+      "method": "PostgreSQL information_schema.columns query"
+    },
+    "country_packs": {
+      "status": "PASS",
+      "detail": "5 Country Packs verified in PostgreSQL: CN/EU/US/JP/ASEAN",
+      "count": 5
+    },
+    "rls_manager": {
+      "status": "PASS",
+      "detail": "RLSManager SetTenantContext/ClearContext/VerifyRLSEnabled tested against real PostgreSQL",
+      "test_coverage": 4
+    }
+  },
+  "migration_fixes_discovered": [
+    "V6: Added missing CREATE SCHEMA graph + GRANT USAGE",
+    "V7: Added GRANT USAGE ON SCHEMA artifact TO ebcx_runtime",
+    "V8: Added GRANT USAGE ON SCHEMA security TO ebcx_runtime",
+    "V9: Fixed tenant.tenants conflict with V3 (ALTER TABLE instead of CREATE TABLE IF NOT EXISTS)"
+  ],
+  "rls_manager_fix": "Changed SET LOCAL with $1 parameter (unsupported by PostgreSQL) to SET with fmt.Sprintf; changed from transaction-scoped to session-scoped",
+  "database_state": "Real PostgreSQL 18.3 with V1~V9 migrations executed. All schemas, tables, triggers, RLS policies, and FK constraints verified to exist.",
+  "event_id": "evt-ebcx-ev1-phy-006-008",
+  "evidence_id": "evd-ebcx-ev1-phy-006-008-20260908-001",
+  "trace_id": "trace-ebcx-ev1-phy-006-008-001",
+  "verification_result": {
+    "status": "PASS",
+    "test_classification": {
+      "UNIT": 79,
+      "INTEGRATION": 22,
+      "PHYSICAL": 18,
+      "PHYSICAL_NEGATIVE": 6,
+      "total": 125
+    },
+    "checks": [
+      "V1~V9 full migration execution on real PostgreSQL 18.3",
+      "All schema/table/trigger/policy existence verified",
+      "Artifact RLS tenant isolation (SET ROLE ebcx_runtime + SET app.tenant_id)",
+      "Artifact WORM triggers (UPDATE/DELETE rejected by DB trigger, not app layer)",
+      "Artifact FK constraint (valid evidence_id PASS, invalid FAIL)",
+      "Audit RLS tenant isolation",
+      "Audit WORM triggers (UPDATE/DELETE rejected by DB trigger)",
+      "Evidence Ledger WORM triggers (UPDATE/DELETE rejected by DB trigger)",
+      "Revoked tokens RLS tenant isolation",
+      "Extension table RLS tenant isolation (CN/EU/US/JP/ASEAN)",
+      "Cross-tenant Pack isolation (A+EU cannot see B+EU data)",
+      "Core Table No-Fork via information_schema (not struct comparison)",
+      "5 Country Packs verified in PostgreSQL",
+      "RLSManager SetTenantContext/ClearContext/VerifyRLSEnabled (4 tests, real PostgreSQL)"
+    ]
+  },
+  "verifier": "go test -tags integration (real PostgreSQL 18.3 via embedded-postgres, 18 Physical Gate tests)",
+  "task_id": "EBCX-EV1-PHY-006-008",
+  "task_title": "Physical Closure Gate for EV1-006/007/008",
+  "red_lines_complied": ["TASK-R04", "TASK-R09"],
+  "architecture_principle": "Physical Reality over Simulation. Real PostgreSQL 18.3 verifies RLS, WORM triggers, FK constraints, tenant isolation, Pack isolation, and Core Table No-Fork."
+}
