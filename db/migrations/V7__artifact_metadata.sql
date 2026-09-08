@@ -10,6 +10,7 @@
 -- artifact schema + artifact.metadata table
 -- =====================================================================
 CREATE SCHEMA IF NOT EXISTS artifact;
+GRANT USAGE ON SCHEMA artifact TO ebcx_runtime;
 
 COMMENT ON SCHEMA artifact IS 'EBC-X Object Storage Artifact metadata — WORM, Evidence-linked (D-GATE-03)';
 

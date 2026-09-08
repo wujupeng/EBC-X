@@ -2,6 +2,9 @@
 -- Tracks Graph Projection state, Reconciliation results, Shadow Rebuild progress
 -- Neo4j is Projection; PostgreSQL is Truth Source (D-GATE-05, D-GATE-06)
 
+CREATE SCHEMA IF NOT EXISTS graph;
+GRANT USAGE ON SCHEMA graph TO ebcx_runtime;
+
 -- =====================================================================
 -- graph.projection_state — per-event projection tracking
 -- =====================================================================

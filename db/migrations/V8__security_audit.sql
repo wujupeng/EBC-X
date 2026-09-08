@@ -5,6 +5,7 @@
 -- HTKIS-AF is the SOLE security base. No module may build its own security.
 
 CREATE SCHEMA IF NOT EXISTS security;
+GRANT USAGE ON SCHEMA security TO ebcx_runtime;
 COMMENT ON SCHEMA security IS 'EBC-X HTKIS-AF Security Base — KMS, JWT revocation, audit (D13)';
 
 -- =====================================================================

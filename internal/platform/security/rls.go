@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	ErrRLSViolation       = errors.New("RLS violation — cross-tenant access blocked")
-	ErrTenantNotSet       = errors.New("tenant_id not set in session context")
-	ErrOrgNotSet          = errors.New("org_id not set in session context")
+	ErrRLSViolation = errors.New("RLS violation — cross-tenant access blocked")
+	ErrTenantNotSet = errors.New("tenant_id not set in session context")
+	ErrOrgNotSet    = errors.New("org_id not set in session context")
 )
 
 type RLSContext struct {
@@ -32,32 +32,26 @@ func (m *RLSManager) SetTenantContext(ctx context.Context, rlsCtx RLSContext) er
 		return ErrTenantNotSet
 	}
 
-	tx, err := m.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	_, err = tx.ExecContext(ctx, "SET LOCAL app.tenant_id = $1", rlsCtx.TenantID)
+	_, err := m.db.ExecContext(ctx, fmt.Sprintf("SET app.tenant_id = '%s'", rlsCtx.TenantID))
 	if err != nil {
 		return fmt.Errorf("failed to set tenant_id: %w", err)
 	}
 
 	if rlsCtx.OrgID != "" {
-		_, err = tx.ExecContext(ctx, "SET LOCAL app.org_id = $1", rlsCtx.OrgID)
+		_, err = m.db.ExecContext(ctx, fmt.Sprintf("SET app.org_id = '%s'", rlsCtx.OrgID))
 		if err != nil {
 			return fmt.Errorf("failed to set org_id: %w", err)
 		}
 	}
 
 	if rlsCtx.UserID != "" {
-		_, err = tx.ExecContext(ctx, "SET LOCAL app.user_id = $1", rlsCtx.UserID)
+		_, err = m.db.ExecContext(ctx, fmt.Sprintf("SET app.user_id = '%s'", rlsCtx.UserID))
 		if err != nil {
 			return fmt.Errorf("failed to set user_id: %w", err)
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (m *RLSManager) ClearTenantContext(ctx context.Context) error {

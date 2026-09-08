@@ -5,17 +5,17 @@
 -- 5 Country Pack extension points: CN / EU / US / JP / ASEAN
 
 -- =====================================================================
--- tenant.tenants — tenant registry
+-- tenant.tenants — already created by V3, add missing columns for V9
 -- =====================================================================
-CREATE TABLE IF NOT EXISTS tenant.tenants (
-    tenant_id       UUID         NOT NULL DEFAULT gen_random_uuid(),
-    tenant_name     VARCHAR(256) NOT NULL,
-    country_code    VARCHAR(10)  NOT NULL,
-    is_active       BOOLEAN      NOT NULL DEFAULT true,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    PRIMARY KEY (tenant_id)
-);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='tenant' AND table_name='tenants' AND column_name='country_code') THEN
+        ALTER TABLE tenant.tenants ADD COLUMN country_code VARCHAR(10);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='tenant' AND table_name='tenants' AND column_name='is_active') THEN
+        ALTER TABLE tenant.tenants ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+    END IF;
+END $$;
 
 COMMENT ON TABLE tenant.tenants IS 'EBC-X Tenant Registry (D14)';
 
