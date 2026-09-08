@@ -7,7 +7,7 @@
     "postgresql": "18.3 (embedded-postgres, real instance)",
     "test_build_tag": "integration"
   },
-  "git_commit": "f5625309636b3d9e1e8127e4878518949708076f",
+  "git_commit": "7e6036d8ee5d5b3b3eced38f66333fd9f49b176e",
   "test_commands": [
     "go test -tags integration ./internal/platform/physicalgate/... -v -count=1 -timeout=120s",
     "go test -tags integration ./internal/platform/security/... -v -count=1 -timeout=180s -run Physical_RLS"
@@ -36,10 +36,13 @@
       "TestPhysical_RLSManager_MissingTenant_Error": "PHYSICAL PASS - RLSManager rejects empty tenant_id",
       "TestPhysical_RLSManager_ClearContext": "PHYSICAL PASS - RLSManager ClearTenantContext succeeds",
       "TestPhysical_RLSManager_VerifyRLSEnabled": "PHYSICAL PASS - audit_log and metadata have RLS enabled",
-      "total_pass": 4,
+      "TestPhysical_RLSManager_ConnectionPoolLifecycle": "PHYSICAL PASS - Transaction-scoped SET LOCAL prevents context leak (4 phases)",
+      "TestPhysical_RLSManager_SetTenantContextInTx": "PHYSICAL PASS - SET LOCAL within existing transaction works correctly",
+      "TestPhysical_RLSManager_LegacySetOverwrite": "PHYSICAL PASS - Legacy SET overwrite on dedicated connection works correctly",
+      "total_pass": 7,
       "total_fail": 0
     },
-    "grand_total_pass": 18,
+    "grand_total_pass": 21,
     "grand_total_fail": 0
   },
   "physical_verification_results": {
