@@ -4,7 +4,7 @@
   "taskName": "Organization 聚合根",
   "gateName": "EV1-010-CODING",
   "timestamp": "2026-09-10T00:32:00Z",
-  "gitCommit": "pending-commit",
+  "gitCommit": "af27278",
   "infrastructure": "PostgreSQL 18.3 + Neo4j 5.x",
   "testLayer": ["unit", "integration", "physical"],
   "testNames": {
