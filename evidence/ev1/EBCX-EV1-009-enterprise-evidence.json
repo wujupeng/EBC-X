@@ -3,8 +3,8 @@
   "taskId": "EBCX-EV1-009",
   "taskName": "Enterprise 聚合根",
   "gateName": "EV1-009-CODING",
-  "timestamp": "2026-09-09T07:28:00Z",
-  "gitCommit": "c45090f95be0c0384f3e4b815df3622f691b7f44",
+  "timestamp": "2026-09-09T13:03:00Z",
+  "gitCommit": "af121c628651ea1575649ee2d69f2273c4d5c866",
   "infrastructure": "PostgreSQL 18.3 + Neo4j 5.x",
   "testLayer": ["unit", "integration", "physical"],
   "testNames": {
@@ -130,5 +130,19 @@
     "rule": "Two concurrent transactions writing to the same empty chain are serialized by pg_advisory_xact_lock(hashtext(chainID)). The first transaction acquires the advisory lock, sees no existing records (sql.ErrNoRows), writes SequenceNo=1 with previousHash=GenesisHash(chainID). The second transaction blocks on the advisory lock, then acquires it after the first commits, sees SequenceNo=1, writes SequenceNo=2 with previousHash=first.evidenceHash. This is advisory lock serialization, NOT UNIQUE(chain_id, sequence_no) constraint error-driven.",
     "advisoryLockFunction": "pg_advisory_xact_lock(hashtext($chainID))",
     "taskAmend": "TASK-AMEND-001"
-  }
+  },
+  "implementationDefectFixes": [
+    {
+      "defectId": "EV1-009-IMP-DEFECT-001",
+      "description": "UpdateEnterpriseCommand.TenantID field added to enable RLS context (SET LOCAL app.tenant_id) within UnitOfWork transaction",
+      "rootCause": "UpdateEnterpriseHandler had no access to tenant_id; RLS policy on business.enterprises requires app.tenant_id to be set in the transaction session",
+      "fix": "Added TenantID string field to UpdateEnterpriseCommand; handler calls uow.SetTenantContext(cmd.TenantID) before repository operations",
+      "pmRuling": "Implementation Defect Fix (not a Design amendment); allowed without spec/design revision",
+      "affectedFiles": [
+        "internal/enterprise/command.go",
+        "internal/enterprise/handler/update_handler.go"
+      ],
+      "verifiedByTests": ["TestIntegration_CASConcurrencyConflict", "TestPhysical_PostgreSQL_Persistence"]
+    }
+  ]
 }
