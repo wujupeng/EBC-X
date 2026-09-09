@@ -3,8 +3,18 @@
 > **项目：EBC-X — Enterprise Business & Industrial Operating System（企业与工业智能运营操作系统）**
 > **阶段：EV1 — Enterprise Core → EBCX-EV1-010 Organization 聚合根**
 > **任务编号：EBCX-EV1-010**
-> **文档版本：v1.0（首次生成，待大G项目经理 EV1-010-SPEC Gate Review）**
-> **状态：🟡 SPEC v1.0（待审查）**
+> **文档版本：v1.1（解决 v1.0 CONDITIONAL PASS 的 2 个 Gate Blocker + 固化 10 项 PM 裁决，待大G项目经理 EV1-010-SPEC Gate Review v1.1）**
+> **状态：🟡 SPEC v1.1（待审查，已解决 Gate Blocker #1 Aggregate Boundary Resolution + Gate Blocker #2 Evidence/sourceEvidenceId 语义，已固化 10 项 PM 裁决）**
+> **变更记录**：
+> - v1.0（2026-09-09）：首次生成，提交大G项目经理 EV1-010-SPEC Gate Review，裁决 CONDITIONAL PASS（2 个 Gate Blocker + 10 项裁决待固化）
+> - v1.1（2026-09-09）：解决 2 个 Gate Blocker + 固化 10 项 PM 裁决：
+>   - 🔴 Gate Blocker #1（Aggregate Boundary Resolution）：修订 R1 表述，区分"自身属性 Mutation"与"树结构协调 Operation"；明确 MoveOrganization 是 Cross-Aggregate Tree Structural Coordination Operation；明确 level 是树结构属性而非业务属性；新增 §10.3 Aggregate Boundary Resolution 声明
+>   - 🔴 Gate Blocker #2（Evidence / sourceEvidenceId 语义矛盾）：区分 Mutation Evidence（mandatory，系统证据）与 sourceEvidenceId（optional，外部来源证据引用）；修正所有涉及"源证据"的表述
+>   - 🟡 裁决 #2（HAS_CHILD）：明确为 EV1-010 扩展 Graph Edge，非 Canonical Graph Contract 8 类边之一，非 BELONGS_TO，Design 阶段定义 Contract
+>   - 🟡 裁决 #3（Code 唯一性 NULL 语义）：明确 Design 阶段必须处理 parentId IS NULL 时 PostgreSQL UNIQUE 约束 NULL 语义（UNIQUE NULLS NOT DISTINCT 或等价唯一索引）
+>   - 🟢 裁决 #4（Move 子树事务）：明确组织树结构属于强一致领域事实，不可拆分多事务最终一致
+>   - 🟡 裁决 #8（Physical Evidence Schema）：改为引用 EV0 TASK-H07 当前冻结版本，不重复定义
+>   - 10 项 PM 裁决全部固化至 §13 关键决策点（已裁决状态）
 > **需求基线（不可变）**：
 > - `.codeartsdoer/specs/ebcx_ev0_arch/spec.md` v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN）
 > - `.codeartsdoer/specs/ebcx_ev0_arch/design.md` v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN）
@@ -213,9 +223,21 @@ EV0 design.md D03 Enterprise Core 已锁定 Organization 聚合根的架构契�
 : Organization 聚合根的版本号，单调递增整数，初始为 1，每次 UpdateOrganization / MoveOrganization 命令执行后递增，作为组织状态变更的版本追踪。
 : 备注：版本单调递增是聚合根不变式之一，禁止回退或跳跃。
 
-**sourceEvidenceId（源证据标识）**
-: Organization 聚合根创建/更新/移动时引用的源 Evidence 记录标识，指向 Evidence Ledger 中的 append-only 证据记录，作为组织变更的可溯源依据。
-: 备注：对应 Evidence-First 原则（TASK-R04），每个 Mutation 必须有源证据支撑。
+**sourceEvidenceId（外部来源证据引用，optional）**
+: Organization 聚合根创建/更新/移动时引用的**外部已有 Evidence 记录标识**，指向 Evidence Ledger 中的 append-only 证据记录，作为本次操作的外部来源依据。**sourceEvidenceId 可以为空**，它不是 Evidence-First 的必要条件。
+: 备注：v1.1 修订（Gate Blocker #2 解决方案）：必须严格区分两个概念——(1) **Mutation Evidence（系统证据，mandatory）**：每次 Mutation 自身在 Evidence Ledger 中产生的记录，这是 Evidence-First 的必要条件，**必须强制存在**；(2) **sourceEvidenceId（外部来源证据引用，optional）**：引用外部已有 Evidence 作为本次操作的来源依据，可以为空。Evidence-First 原则（TASK-R04）的要求是"每个 Mutation 必须在 Evidence Ledger 中产生 Evidence 记录（Mutation Evidence，mandatory）"，而非要求 sourceEvidenceId 必填。
+
+**Mutation Evidence（系统证据，mandatory）**
+: Organization 聚合根每次 Mutation（CreateOrganization / UpdateOrganization / MoveOrganization）时，由 Evidence Adapter 在同一 PostgreSQL ACID 事务内写入 Evidence Ledger 的 append-only 证据记录，承载本次 Mutation 的不可篡改事实。**Mutation Evidence 必须强制存在**，是 Evidence-First 原则（TASK-R04）的必要条件。
+: 备注：v1.1 新增术语（Gate Blocker #2 解决方案）。Mutation Evidence 与 sourceEvidenceId 是两个独立概念：Mutation Evidence 是本次操作产生的系统证据（mandatory），sourceEvidenceId 是引用的外部来源证据（optional）。所有三个命令（Create/Update/Move）的 sourceEvidenceId 保持 optional，但所有三个命令的 Mutation Evidence 必须强制存在。
+
+**Cross-Aggregate Tree Structural Coordination Operation（跨聚合树结构协调领域操作）**
+: MoveOrganization 是一种跨越多个 Organization Aggregate 的领域操作，在单一 PostgreSQL ACID 事务内原子更新整个子树的 level，维护组织树结构不变式。它不是单个 Aggregate 的内部 Mutation，也不是"一个 Aggregate 修改另一个 Aggregate 的属性"，而是"一个领域协调操作在事务内维护组织树的结构一致性"。
+: 备注：v1.1 新增术语（Gate Blocker #1 解决方案）。MoveOrganization 以被移动的 Organization 为入口，但操作范围跨越多个 Organization Aggregate。这不违反 R1（自身属性 Mutation Root），也不违反 R2（ACID 事务），反而正是 R2 的体现。
+
+**Tree Structural Property（组织树结构属性）**
+: level 是组织树的结构属性，不是 Organization 的业务属性。level 的维护属于树结构一致性约束，由 MoveOrganization 跨聚合树结构协调操作统一维护，而非由单个 Organization Aggregate 自行管理。
+: 备注：v1.1 新增术语（Gate Blocker #1 解决方案）。区分"自身业务属性"（name / code / description 等，由 Organization Aggregate 自身 Mutation Root 管理）与"树结构属性"（level，由跨聚合树结构协调操作维护）。
 
 **tenantId（租户标识）**
 : Organization 聚合根所属的租户标识，通过 RLS 行级安全策略强制隔离，作为多租户场景下组织数据的归属与隔离依据。
@@ -264,9 +286,9 @@ EV0 design.md D03 Enterprise Core 已锁定 Organization 聚合根的架构契�
 : Neo4j Graph 中 Organization 节点至 Enterprise 节点的归属关系边，edgeType='BELONGS_TO'，由 OrganizationCreated 事件驱动创建，表示组织单元归属于企业。
 : 备注：EV0 spec.md §5.5.1 规则 3 定义，BELONGS_TO: Enterprise→Organization。
 
-**HAS_CHILD 边（父子组织关系边）**
+**HAS_CHILD 边（父子组织关系边，EV1-010 扩展 Graph Edge）**
 : Neo4j Graph 中 parent Organization 节点至 child Organization 节点的父子关系边，edgeType='HAS_CHILD'，由 OrganizationCreated / OrganizationMoved 事件驱动创建/变更，表示组织树的层级结构。
-: 备注：EV0 8 Edge Type 之外的扩展边类型，需在 design.md 阶段裁决是否纳入 Canonical Graph Contract 或作为扩展边。本 spec.md 仅定义业务语义，边类型契约归属 design.md。
+: 备注：v1.1 修订（PM 裁决 #2 固化）：**HAS_CHILD 是 EV1-010 Organization Tree 扩展边类型**，非 Canonical Graph Contract 的 8 类边之一（BELONGS_TO / TRADES_WITH / PRODUCES / USES_ASSET / EVIDENCED_BY / GOVERNED_BY / APPROVED_BY / DERIVED_FROM），也非 BELONGS_TO 的复用。Design 阶段需正式定义 HAS_CHILD 边的 Contract 要素：(1) edgeType 枚举值；(2) source / target 节点类型约束（Organization→Organization）；(3) provenance 字段（sourceEvent / sourceEvidenceId）；(4) lifecycle 字段（validity='active'/'inactive'）；(5) MoveOrganization 时旧边处理策略（删除或标记 validity='inactive'）；(6) Event Replay 行为；(7) 是否允许直接删除还是仅允许 validity='inactive' 软关闭。本 spec.md 仅定义业务语义，边类型契约归属 design.md。
 
 **同事务原子写入（Same-Transaction Atomic Write）**
 : Organization 聚合根 Mutation 时，Idempotency Record + 聚合根状态变更 + Evidence Ledger 写入 + Outbox Event 写入在同一 PostgreSQL Local ACID 事务内完成，保证四者原子性。
@@ -371,8 +393,8 @@ BigG --> HWC : Gate Review 裁决
 
 ## **4.4 可维护性**
 
-1. **Physical Evidence 产出**：EV1-010 必须产出 `evidence/ev1/EBCX-EV1-010-organization-evidence.json`，含聚合根测试、Evidence 记录、Graph 节点与边验证，符合 Physical Evidence 最小字段标准（TASK-H07）。
-   a. 验收条件：[EV1-010 完成] → [Physical Evidence JSON 存在且字段完整]
+1. **Physical Evidence 产出（v1.1 修订，PM 裁决 #8 固化）**：EV1-010 必须产出 `evidence/ev1/EBCX-EV1-010-organization-evidence.json`，含聚合根测试、Evidence 记录、Graph 节点与边验证，**必须满足 EV0 TASK-H07 当前冻结版本（EV0 tasks.md v1.2 §十一 Physical Evidence 统一最小字段标准，14 个最小字段：execution_id / timestamp / environment / git_commit / test_command / actual_output / actual_metrics / database_state / event_id / evidence_id / trace_id / failure_injection_result / verification_result / verifier）**，本 spec.md 不重复定义 Physical Evidence Schema，以 EV0 TASK-H07 冻结版本为唯一基准。
+   a. 验收条件：[EV1-010 完成] → [Physical Evidence JSON 存在且满足 EV0 TASK-H07 14 个最小字段标准]
 2. **测试分层**：EV1-010 必须包含 Unit Test（聚合根不变式校验、命令处理逻辑）+ Integration Test（同事务原子写入、Outbox 发布、Graph 投影、RLS 租户隔离、组织树层级校验、CAS 并发冲突）+ Physical Test（真实 PostgreSQL + Neo4j 验证），禁止仅 Unit Test 声明完成。
    a. 验收条件：[EV1-010 测试审查] → [Unit + Integration + Physical 三层测试全部 PASS]
 3. **Test PASS ≠ Physical PASS**：Unit Test + Integration Test PASS 不等于 Physical Evidence PASS，必须由真实 Infrastructure（PostgreSQL 18.3 + Neo4j）验证产出 Physical Evidence。
@@ -415,8 +437,8 @@ BigG --> HWC : Gate Review 裁决
    a. 验收条件：[CreateOrganization parentId 非空] → [level = parent.level + 1]；[CreateOrganization parentId 空] → [level = 1]
 8. **version 初始化规则**：CreateOrganization 执行后 version 必须初始化为 1。
    a. 验收条件：[CreateOrganization 执行] → [version = 1]
-9. **Evidence-First 规则（TASK-R04）**：CreateOrganization 必须在同事务内写入 Evidence Ledger 记录，记录含 orgId / enterpriseId / parentId / name / code / level / version / tenantId / sourceEvidenceId / git_commit / trace_id / event_id / evidence_id / timestamp，append-only 不可篡改。
-   a. 验收条件：[CreateOrganization 执行] → [Evidence Ledger 含对应 Evidence 记录，字段完整]
+9. **Evidence-First 规则（TASK-R04，v1.1 修订）**：CreateOrganization 必须在同事务内写入 Evidence Ledger 记录（**Mutation Evidence，mandatory**），记录含 orgId / enterpriseId / parentId / name / code / level / version / tenantId / sourceEvidenceId / git_commit / trace_id / event_id / evidence_id / timestamp，append-only 不可篡改。**Mutation Evidence 必须强制存在**，是 Evidence-First 的必要条件。sourceEvidenceId（外部来源证据引用）保持 optional，可以为空，不是 Evidence-First 的必要条件。
+   a. 验收条件：[CreateOrganization 执行] → [Evidence Ledger 含对应 Mutation Evidence 记录，字段完整，强制存在]
 10. **Outbox Event 同事务写入规则**：CreateOrganization 必须在同事务内写入 Outbox Event（OrganizationCreated），事件含 orgId / enterpriseId / parentId / name / code / level / version / sourceEvidenceId / tenantId / timestamp / traceId，事务提交后异步发布至 Kafka。
    a. 验收条件：[CreateOrganization 事务提交] → [Outbox 含 OrganizationCreated Event，异步发布至 Kafka]
 11. **Mutation 进入治理链规则（TASK-R05）**：CreateOrganization 属于 Mutation 路径，必须走第一性原理链路，本任务实现 Transaction + Data + Evidence 阶段，Policy/Decision/Agent/Execution/Verification 阶段在 EV2 编排。
@@ -514,8 +536,8 @@ KAFKA -> NEO4J : (异步) 投影 Organization 节点 + BELONGS_TO 边 + HAS_CHIL
    a. 验收条件：[并发 UpdateOrganization 基于同一旧 version] → [仅一个成功，其余拒绝，返回 EBCX-ORGANIZATION-VERSION-CONFLICT]
 4. **组织编码唯一性校验规则（更新场景）**：UpdateOrganization 更新 code 时，若新 code 与同企业同父组织下其他组织 code 冲突则拒绝（排除自身）。
    a. 验收条件：[UpdateOrganization 更新 code 至同企业同父已存在 code（非自身）] → [拒绝，返回 EBCX-ORGANIZATION-DUPLICATE-CODE]
-5. **Evidence-First 规则（TASK-R04）**：UpdateOrganization 必须在同事务内写入 Evidence Ledger 记录，记录含 orgId / enterpriseId / parentId / newName / newCode / level / 新 version / tenantId / sourceEvidenceId / git_commit / trace_id / event_id / evidence_id / timestamp，append-only 不可篡改。
-   a. 验收条件：[UpdateOrganization 执行] → [Evidence Ledger 含对应 Evidence 记录，字段完整]
+5. **Evidence-First 规则（TASK-R04，v1.1 修订）**：UpdateOrganization 必须在同事务内写入 Evidence Ledger 记录（**Mutation Evidence，mandatory**），记录含 orgId / enterpriseId / parentId / newName / newCode / level / 新 version / tenantId / sourceEvidenceId / git_commit / trace_id / event_id / evidence_id / timestamp，append-only 不可篡改。**Mutation Evidence 必须强制存在**。sourceEvidenceId（外部来源证据引用）保持 optional。
+   a. 验收条件：[UpdateOrganization 执行] → [Evidence Ledger 含对应 Mutation Evidence 记录，字段完整，强制存在]
 6. **Outbox Event 同事务写入规则**：UpdateOrganization 必须在同事务内写入 Outbox Event（OrganizationUpdated），事件含 orgId / enterpriseId / parentId / newName / newCode / level / 新 version / sourceEvidenceId / tenantId / timestamp / traceId，事务提交后异步发布至 Kafka。
    a. 验收条件：[UpdateOrganization 事务提交] → [Outbox 含 OrganizationUpdated Event，异步发布至 Kafka]
 7. **Mutation 进入治理链规则（TASK-R05）**：UpdateOrganization 属于 Mutation 路径，必须走第一性原理链路，本任务实现 Transaction + Data + Evidence 阶段。
@@ -587,8 +609,8 @@ KAFKA -> NEO4J : (异步) 投影更新 Organization 节点 (name/code/version)
 
 ### **5.3.1 业务规则**
 
-1. **组织移动命令处理规则**：MoveOrganization 命令必须由 Enterprise Core API 调用方发起，聚合根接收命令后执行：加载当前聚合根状态 → 校验组织存在性 → 校验版本单调递增 → 校验 newParentId（若非空）→ 校验组织树无环不变式 → 计算新 level → 校验子树层级 ≤5 不变式（含所有后代）→ 更新 parentId / level → version 递增 → 同事务写入 Evidence Ledger → 同事务写入 Outbox Event（OrganizationMoved）→ 事务提交 → 返回新聚合根状态。
-   a. 验收条件：[MoveOrganization 命令执行] → [聚合根 parentId/level 更新，子树 level 递归更新，version 递增，Evidence + Outbox 同事务写入]
+1. **组织移动命令处理规则（v1.1 修订，Gate Blocker #1 解决方案）**：MoveOrganization 是 **Cross-Aggregate Tree Structural Coordination Operation（跨聚合树结构协调领域操作）**，不是单个 Organization Aggregate 的内部 Mutation。MoveOrganization 命令必须由 Enterprise Core API 调用方发起，以被移动的 Organization 为入口，聚合根接收命令后执行：加载当前聚合根状态 → 校验组织存在性 → 校验版本单调递增 → 校验 newParentId（若非空）→ 校验组织树无环不变式 → 计算新 level → 校验子树层级 ≤5 不变式（含所有后代）→ 更新 parentId / level → version 递增 → **子树所有后代 level 递归更新（树结构属性维护，非业务属性修改）** → 同事务写入 Evidence Ledger → 同事务写入 Outbox Event（OrganizationMoved）→ 事务提交 → 返回新聚合根状态。MoveOrganization 在单一 PostgreSQL ACID 事务内原子更新整个子树的 level，维护组织树结构不变式，这不视为对其他 Aggregate 的"属性修改"，而是对树结构一致性的协调维护。
+   a. 验收条件：[MoveOrganization 命令执行] → [聚合根 parentId/level 更新，子树 level 递归更新（树结构协调），version 递增，Evidence + Outbox 同事务写入，整个操作在单一 ACID 事务内原子完成]
 2. **组织存在性校验规则**：MoveOrganization 必须校验目标 orgId 存在，不存在则拒绝。
    a. 验收条件：[MoveOrganization 不存在的 orgId] → [拒绝，返回 EBCX-ORGANIZATION-NOT-FOUND]
 3. **版本单调递增校验规则**：MoveOrganization 必须基于当前最新 version 执行（CAS 乐观锁），执行后 version = 旧 version + 1。
@@ -601,10 +623,10 @@ KAFKA -> NEO4J : (异步) 投影更新 Organization 节点 (name/code/version)
    a. 验收条件：[MoveOrganization 子树最大深度 + 新 level > 5] → [拒绝，返回 EBCX-ORGANIZATION-SUBTREE-LEVEL-EXCEED-MAX]
 7. **新 level 计算规则**：MoveOrganization 时新 level 由聚合根根据 newParentId 计算：newParentId 非空时 newLevel = newParent.level + 1，newParentId 空时 newLevel = 1，禁止命令参数直接设置 level。
    a. 验收条件：[MoveOrganization newParentId 非空] → [newLevel = newParent.level + 1]；[MoveOrganization newParentId 空] → [newLevel = 1]
-8. **子树 level 递归更新规则**：MoveOrganization 时当前组织的所有后代组织的 level 必须递归更新：后代新 level = 后代原 level - 当前组织原 level + 当前组织新 level。子树更新在同一事务内完成。
-   a. 验收条件：[MoveOrganization 执行] → [子树所有后代 level 递归更新，同事务原子]
-9. **Evidence-First 规则（TASK-R04）**：MoveOrganization 必须在同事务内写入 Evidence Ledger 记录，记录含 orgId / enterpriseId / oldParentId / newParentId / oldLevel / newLevel / 新 version / tenantId / sourceEvidenceId / git_commit / trace_id / event_id / evidence_id / timestamp，append-only 不可篡改。
-   a. 验收条件：[MoveOrganization 执行] → [Evidence Ledger 含对应 Evidence 记录，字段完整]
+8. **子树 level 递归更新规则（v1.1 修订，Gate Blocker #1 解决方案）**：MoveOrganization 时当前组织的所有后代组织的 level 必须递归更新：后代新 level = 后代原 level - 当前组织原 level + 当前组织新 level。子树更新在同一事务内完成。**level 是组织树结构属性（Tree Structural Property），不是 Organization 的业务属性**；子树 level 递归更新属于树结构一致性约束的协调维护，由 MoveOrganization 跨聚合树结构协调操作统一执行，不视为对其他 Organization Aggregate 自身业务属性的修改。组织树结构属于强一致领域事实，禁止拆分多事务最终一致（PM 裁决 #4 固化）。
+   a. 验收条件：[MoveOrganization 执行] → [子树所有后代 level 递归更新，同事务原子，组织树结构强一致]
+9. **Evidence-First 规则（TASK-R04，v1.1 修订）**：MoveOrganization 必须在同事务内写入 Evidence Ledger 记录（**Mutation Evidence，mandatory**），记录含 orgId / enterpriseId / oldParentId / newParentId / oldLevel / newLevel / 新 version / tenantId / sourceEvidenceId / git_commit / trace_id / event_id / evidence_id / timestamp，append-only 不可篡改。**Mutation Evidence 必须强制存在**。sourceEvidenceId（外部来源证据引用）保持 optional。
+   a. 验收条件：[MoveOrganization 执行] → [Evidence Ledger 含对应 Mutation Evidence 记录，字段完整，强制存在]
 10. **Outbox Event 同事务写入规则**：MoveOrganization 必须在同事务内写入 Outbox Event（OrganizationMoved），事件含 orgId / enterpriseId / oldParentId / newParentId / oldLevel / newLevel / 新 version / sourceEvidenceId / tenantId / timestamp / traceId，事务提交后异步发布至 Kafka。
     a. 验收条件：[MoveOrganization 事务提交] → [Outbox 含 OrganizationMoved Event，异步发布至 Kafka]
 11. **Mutation 进入治理链规则（TASK-R05）**：MoveOrganization 属于 Mutation 路径，必须走第一性原理链路，本任务实现 Transaction + Data + Evidence 阶段。
@@ -759,8 +781,8 @@ PG --> OAGG : 事务提交成功 (五者原子成功)
    a. 验收条件：[Neo4j Graph Organization 节点] → [nodeType='Organization'，属性符合契约]
 3. **BELONGS_TO 边投影规则**：OrganizationCreated 事件驱动创建 BELONGS_TO 边（Organization 节点 → Enterprise 节点），edgeType='BELONGS_TO'，边属性含 sourceEvent / sourceEvidenceId / validity='active'。BELONGS_TO 边由 Domain Event 驱动创建，禁止 Graph AI 推断（TASK-R06）。
    a. 验收条件：[OrganizationCreated 事件投影] → [Neo4j Graph 含 BELONGS_TO 边（Organization→Enterprise），由 Domain Event 驱动]
-4. **HAS_CHILD 边投影规则**：OrganizationCreated / OrganizationMoved 事件驱动创建/变更 HAS_CHILD 边（parent Organization 节点 → child Organization 节点），edgeType='HAS_CHILD'，边属性含 sourceEvent / sourceEvidenceId / validity='active'。MoveOrganization 时旧 HAS_CHILD 边删除（或标记 validity='inactive'），新 HAS_CHILD 边创建。HAS_CHILD 边由 Domain Event 驱动创建，禁止 Graph AI 推断（TASK-R06）。
-   a. 验收条件：[OrganizationCreated/Moved 事件投影] → [Neo4j Graph 含 HAS_CHILD 边（parent→child），由 Domain Event 驱动，Move 时旧边删除/新边创建]
+4. **HAS_CHILD 边投影规则（v1.1 修订，PM 裁决 #2 固化）**：OrganizationCreated / OrganizationMoved 事件驱动创建/变更 HAS_CHILD 边（parent Organization 节点 → child Organization 节点），edgeType='HAS_CHILD'，边属性含 sourceEvent / sourceEvidenceId / validity='active'。MoveOrganization 时旧 HAS_CHILD 边删除（或标记 validity='inactive'），新 HAS_CHILD 边创建。HAS_CHILD 边由 Domain Event 驱动创建，禁止 Graph AI 推断（TASK-R06）。**HAS_CHILD 是 EV1-010 扩展 Graph Edge，非 Canonical Graph Contract 8 类边之一，非 BELONGS_TO**，Design 阶段需正式定义其 Contract 要素（详见 §2 领域术语 HAS_CHILD 边定义）。
+   a. 验收条件：[OrganizationCreated/Moved 事件投影] → [Neo4j Graph 含 HAS_CHILD 边（parent→child），由 Domain Event 驱动，Move 时旧边删除/新边创建，边类型为扩展 Graph Edge]
 5. **Graph 投影最终一致规则**：Graph 投影通过 Outbox + EventBus 异步完成，最终一致 ≤3s（Normal Mode），Neo4j 故障不拖垮聚合根命令处理。
    a. 验收条件：[Neo4j 故障] → [聚合根命令处理成功，Graph 投影待重投，最终一致 ≤3s]
 6. **Graph Truth vs Evidence Truth 裁决规则**：当 PostgreSQL → Neo4j 出现不一致时，以 PostgreSQL Evidence Ledger 为最终事实裁决源，Neo4j 为投影层可通过 Event Replay 重建。
@@ -816,10 +838,10 @@ NEO4J --> CONSUMER : 投影成功
 2. **enterpriseId**：UUID 类型，非空必填，指向已存在的 Enterprise 聚合根（`business.enterprises` 表中存在对应记录），作为组织单元的企业归属依据，创建后不可变更。
 3. **parentId**：UUID 类型，可空（空表示根组织，level=1），指向同一 enterpriseId 下的另一个 Organization，构成组织树层级结构，parentId 链不得形成环（组织树无环不变式）。
 4. **name**：字符串类型，非空必填，长度 1~256 字符，作为组织单元的显示名称。
-5. **code**：字符串类型，非空必填，长度 1~64 字符，同一 enterpriseId + 同一 parentId 下唯一（组织唯一性不变式），作为组织单元的业务编码。
-6. **level**：整数类型，非空必填，取值范围 [1, 5]，根组织 level=1，子组织 level = parent.level + 1，由聚合根根据 parentId 计算，禁止直接设置（组织树层级 ≤5 不变式）。
+5. **code**：字符串类型，非空必填，长度 1~64 字符，同一 enterpriseId + 同一 parentId 下唯一（组织唯一性不变式，UNIQUE(enterpriseId, parentId, code)），作为组织单元的业务编码。**v1.1 修订（PM 裁决 #3 固化）**：Design 阶段必须处理 parentId IS NULL 时 PostgreSQL UNIQUE 约束的 NULL 语义问题——PostgreSQL 默认 NULL 值在 UNIQUE 约束中视为不相等（多个 NULL 允许），这会导致同企业下多个根组织（parentId IS NULL）可以拥有相同 code，违反组织唯一性不变式。Design 阶段必须采用 `UNIQUE NULLS NOT DISTINCT`（PostgreSQL 15+）或等价唯一索引方案（如 `COALESCE(parentId, '00000000-0000-0000-0000-000000000000')` 部分索引）确保 parentId IS NULL 时 code 唯一性约束生效。
+6. **level**：整数类型，非空必填，取值范围 [1, 5]，根组织 level=1，子组织 level = parent.level + 1，由聚合根根据 parentId 计算，禁止直接设置（组织树层级 ≤5 不变式）。**level 是组织树结构属性（Tree Structural Property），不是 Organization 的业务属性**（v1.1 修订，Gate Blocker #1 解决方案）；MoveOrganization 时子树 level 递归更新由跨聚合树结构协调操作统一维护，不视为对其他 Aggregate 自身业务属性的修改。
 7. **version**：整数类型，非空必填，初始为 1，每次 UpdateOrganization / MoveOrganization 递增 1，严格单调递增（版本单调递增不变式），作为组织状态变更的版本追踪。
-8. **sourceEvidenceId**：UUID 类型，可空（创建时可选），指向 Evidence Ledger 中的 append-only 证据记录，作为组织变更的可溯源依据。
+8. **sourceEvidenceId**：UUID 类型，可空（创建/更新/移动时可选），指向 Evidence Ledger 中的 append-only 证据记录，作为组织变更的**外部来源证据引用**（optional）。**sourceEvidenceId 不是 Evidence-First 的必要条件**，可以为空（v1.1 修订，Gate Blocker #2 解决方案）。Evidence-First 的必要条件是 Mutation Evidence（系统证据，mandatory）必须强制存在，由 Evidence Adapter 在同事务内写入 Evidence Ledger。
 9. **tenantId**：UUID 类型，非空必填，由 RLS 上下文注入（`BeginTenantTransaction`），禁止命令参数覆盖，作为多租户场景下组织数据的归属与隔离依据。
 10. **createdAt**：时间戳类型，非空必填，由聚合根在创建时生成，作为组织创建时间。
 11. **updatedAt**：时间戳类型，非空必填，由聚合根在创建/更新/移动时生成，作为组织最后变更时间。
@@ -929,8 +951,8 @@ NEO4J --> CONSUMER : 投影成功
 
 ## **7.3 Evidence 验收**
 
-1. **Physical Evidence JSON 产出**：EV1-010 必须产出 `evidence/ev1/EBCX-EV1-010-organization-evidence.json`，含聚合根测试、Evidence 记录、Graph 节点与边验证，符合 Physical Evidence 最小字段标准（TASK-H07）。
-   a. 验收条件：[EV1-010 完成] → [Physical Evidence JSON 存在且字段完整]
+1. **Physical Evidence JSON 产出（v1.1 修订，PM 裁决 #8 固化）**：EV1-010 必须产出 `evidence/ev1/EBCX-EV1-010-organization-evidence.json`，含聚合根测试、Evidence 记录、Graph 节点与边验证，**必须满足 EV0 TASK-H07 当前冻结版本（EV0 tasks.md v1.2 §十一，14 个最小字段标准）**，本 spec.md 不重复定义 Physical Evidence Schema。
+   a. 验收条件：[EV1-010 完成] → [Physical Evidence JSON 存在且满足 EV0 TASK-H07 14 个最小字段标准]
 2. **Provenance 一致性**：Evidence JSON 的 git_commit 必须与实际验证代码 commit 一致。
    a. 验收条件：[Evidence JSON git_commit] → [等于实际代码 commit]
 
@@ -955,7 +977,7 @@ NEO4J --> CONSUMER : 投影成功
 
 | 约束编号 | 约束内容 | 落地机制 | 验收证据 |
 |---|---|---|---|
-| **R1** | Organization Aggregate 是 Organization 唯一 Mutation Root | OrganizationAggregate 封装全部 Mutation 入口（CreateOrganization / UpdateOrganization / MoveOrganization），外部仅通过 CommandHandler → Aggregate 路径，禁止绕过聚合根直接写 `business.organizations` 表 | 编译期 lint + 代码评审 |
+| **R1** | **OrganizationAggregate 是单个 Organization 自身业务属性（name / code / description 等）的唯一 Mutation Root；MoveOrganization 是跨 Aggregate 的树结构协调领域操作（Cross-Aggregate Tree Structural Coordination Operation），在单一 ACID 事务内原子更新整个子树的 level，维护组织树结构不变式。这不视为对其他 Aggregate 的"属性修改"，而是对树结构一致性的协调维护。**（v1.1 修订，Gate Blocker #1 解决方案）** | (1) 自身属性 Mutation：OrganizationAggregate 封装全部自身属性 Mutation 入口（CreateOrganization / UpdateOrganization / MoveOrganization 对自身 parentId / version 的变更），外部仅通过 CommandHandler → Aggregate 路径，禁止绕过聚合根直接写 `business.organizations` 表自身属性；(2) 树结构协调 Operation：MoveOrganization 对子树 level 的递归更新是跨 Aggregate 树结构协调操作，level 是树结构属性（Tree Structural Property）而非业务属性，由 MoveOrganization 在单一 ACID 事务内原子维护，不视为对其他 Aggregate 自身业务属性的修改 | 编译期 lint + 代码评审 + Integration Test 子树 level 递归更新同事务原子验证 |
 | **R2** | Idempotency + Organization + Evidence + Outbox 必须同一 ACID Transaction（四者原子） | UnitOfWork 在单一 `*sql.Tx` 内顺序执行：Idempotency Record 预留 → 聚合根状态写入 → Evidence Ledger INSERT → Outbox Event INSERT → Idempotency Record MarkSuccess → COMMIT，任一失败整体 ROLLBACK（对齐 EV1-009 R2） | Integration Test 同事务原子性验证 |
 | **R3** | Neo4j 永远不得进入 Organization Mutation 主事务 | 主事务（`*sql.Tx`）内仅访问 PostgreSQL；Neo4j 投影由独立 ProjectionConsumer 异步消费 Outbox Event，主事务 COMMIT 后才触发，Neo4j 故障不阻塞主事务（对齐 EV1-009 R3） | Physical Test Neo4j 故障隔离验证 |
 | **R4** | Update / Move 必须实现 version-based CAS 乐观并发控制 | UpdateOrganization / MoveOrganization 使用原子 SQL `UPDATE ... SET version = version + 1 WHERE id = ? AND version = ?`，通过 `affectedRows == 0` 判定 CONCURRENCY_CONFLICT，禁止 SELECT-then-UPDATE 非原子方案（对齐 EV1-009 R4） | Integration Test CAS 并发冲突验证 |
@@ -1061,6 +1083,33 @@ note right of OAGG : 边界声明:\n1. 独立聚合根, 非 Enterprise 内部实
 @enduml
 ```
 
+## **10.3 Aggregate Boundary Resolution（v1.1 新增，Gate Blocker #1 解决方案）**
+
+> 本节明确 Organization Aggregate 的逻辑边界与 MoveOrganization 跨聚合操作的语义，解决 v1.0 spec.md 中"Organization 是独立聚合根"与"MoveOrganization 同事务修改整个子树"之间的表面矛盾。
+
+### **10.3.1 Aggregate Root 的逻辑边界**
+
+1. **每个 Organization 是一个独立 Aggregate Root**：每个 Organization 拥有自己的 identity（orgId）、version、invariants，是独立的聚合根，非 Enterprise 聚合的内部实体，也非其他 Organization 聚合的内部实体。
+2. **自身业务属性的唯一 Mutation Root**：Organization 的自身业务属性（name / code / description 等）只能通过该 Organization 自己的 Aggregate Root 修改。外部仅通过 CommandHandler → Aggregate 路径，禁止绕过聚合根直接写 `business.organizations` 表的自身业务属性。
+3. **跨聚合引用通过 ID**：Organization 与 Enterprise 之间通过 enterpriseId 引用（非对象引用），Organization 与 parent Organization 之间通过 parentId 引用（非对象引用），符合 DDD 跨聚合引用模式。
+
+### **10.3.2 MoveOrganization 是跨聚合树结构协调领域操作**
+
+1. **MoveOrganization 是 Cross-Aggregate Domain Operation**：MoveOrganization 是一种跨越多个 Organization Aggregate 的领域操作，不是单个 Aggregate 的内部 Mutation。它在单一 PostgreSQL ACID 事务内原子完成，但操作范围跨越多个 Organization Aggregate。
+2. **level 是组织树结构属性，非业务属性**：level 是组织树的结构属性（Tree Structural Property），不是 Organization 的业务属性。level 的维护属于树结构一致性约束，由 MoveOrganization 跨聚合树结构协调操作统一维护，而非由单个 Organization Aggregate 自行管理。
+3. **子树 level 更新不是"属性修改"**：MoveOrganization 在一个事务内原子更新整个子树的 level，但这不是"一个 Aggregate 修改另一个 Aggregate 的属性"，而是"一个领域协调操作在事务内维护组织树的结构不变式"。这不违反 R1（自身属性 Mutation Root），也不违反 R2（ACID 事务），反而正是 R2 的体现。
+4. **组织树结构属于强一致领域事实**：组织树结构一致性是强一致领域事实，不能拆分多事务最终一致（PM 裁决 #4 固化）。MoveOrganization 必须在单一 ACID 事务内原子完成整个子树的 level 更新。
+
+### **10.3.3 R1 的准确语义（v1.1 修订）**
+
+R1（Mutation Root）的准确语义修订为：
+
+> **OrganizationAggregate 是单个 Organization 自身业务属性（name / code / description 等）的唯一 Mutation Root。MoveOrganization 是跨 Aggregate 的树结构协调领域操作（Cross-Aggregate Tree Structural Coordination Operation），在单一 ACID 事务内原子更新整个子树的 level，维护组织树结构不变式。这不视为对其他 Aggregate 的"属性修改"，而是对树结构一致性的协调维护。**
+
+- **R1 针对的是单个 Organization 的自身业务属性**（name / code / description 等），禁止绕过聚合根直接修改这些属性。
+- **R1 不限制树结构协调操作**（MoveOrganization 对子树 level 的维护），因为 level 是树结构属性而非业务属性。
+- **R1 不限制跨聚合树结构协调操作的事务范围**，MoveOrganization 在单一 ACID 事务内原子更新整个子树是 R2（ACID 事务）的体现，不违反 R1。
+
 ---
 
 # **11. 禁止事项（Prohibitions）**
@@ -1116,32 +1165,153 @@ note right of OAGG : 边界声明:\n1. 独立聚合根, 非 Enterprise 内部实
 
 ---
 
-# **13. 关键决策点（需大G项目经理审查）**
+# **13. 关键决策点（v1.1 已全部裁决固化）**
 
-> 以下关键决策点需大G项目经理在 EV1-010-SPEC Gate Review 时审查裁决：
+> 以下 10 项关键决策点已在 v1.0 EV1-010-SPEC Gate Review 中由大G项目经理裁决，v1.1 全部固化为已裁决状态。裁决结果已反映在 spec.md v1.1 对应章节中。
 
-1. **Scope 边界确认**：本 spec.md 严格限定 EV1-010 仅实现 Organization 聚合根，不包含 Person / MasterData / Permission / User / Authorization。请大G项目经理确认 Scope 边界与 EV0 tasks.md L519-535 一致，无扩大。
+## **13.1 已裁决决策点清单（10 项 PM 裁决固化）**
 
-2. **HAS_CHILD 边类型契约归属**：本 spec.md 定义 HAS_CHILD 边（parent Organization → child Organization）作为组织树层级关系的 Graph 投影边，但 EV0 8 Edge Type 枚举（BELONGS_TO / TRADES_WITH / PRODUCES / USES_ASSET / EVIDENCED_BY / GOVERNED_BY / APPROVED_BY / DERIVED_FROM）未显式包含 HAS_CHILD。请大G项目经理裁决：HAS_CHILD 是纳入 Canonical Graph Contract（扩展 8 Edge Type 至 9 类），还是作为 BELONGS_TO 的复用（Organization→parent Organization 用 BELONGS_TO 边），还是作为扩展边类型（非 Canonical）。建议在 design.md 阶段裁决。
+| # | 决策点 | PM 裁决 | v1.1 固化位置 | 裁决状态 |
+|---|---|---|---|---|
+| 1 | Scope 边界确认 | 🟢 PASS，保持不变 | §Scope / Non-Scope（不变） | ✅ 已固化 |
+| 2 | HAS_CHILD 边类型契约归属 | 🟡 保留为 EV1-010 扩展 Graph Edge，不复用 BELONGS_TO，Design 阶段正式定义 Contract | §2 领域术语 HAS_CHILD 边 / §5.5.1 规则 4 / §13.2 决策详情 | ✅ 已固化 |
+| 3 | 组织唯一性不变式粒度 | 🟢 同 Enterprise + 同 Parent + Code 唯一，保持 UNIQUE(enterpriseId, parentId, code)；Design 阶段处理 parentId IS NULL 的 PostgreSQL UNIQUE NULL 语义 | §6.1 code 字段 / §13.2 决策详情 | ✅ 已固化 |
+| 4 | MoveOrganization 子树更新事务范围 | 🟢 必须同事务原子，组织树结构属于强一致领域事实，不可拆分多事务最终一致 | §5.3.1 规则 8 / §10.3.2 / §13.2 决策详情 | ✅ 已固化 |
+| 5 | sourceEvidenceId 可空性 | 🟢 可空，但 Mutation Evidence 必须存在 | §2 sourceEvidenceId / Mutation Evidence 术语 / §5.1.1 规则 9 / §5.2.1 规则 5 / §5.3.1 规则 9 / §13.2 决策详情 | ✅ 已固化 |
+| 6 | Organization 删除命令归属 | 🟢 后续 EV，不属于 EV1-010 | §Non-Scope 第 10 项（不变） | ✅ 已固化 |
+| 7 | Organization 启用/停用状态机归属 | 🟢 后续 EV，不属于 EV1-010 | §Non-Scope 第 11 项（不变） | ✅ 已固化 |
+| 8 | Physical Evidence 字段标准 | 🟢 引用 EV0 TASK-H07 当前冻结版本，不重复定义 | §4.4 规则 1 / §7.3 规则 1 / §13.2 决策详情 | ✅ 已固化 |
+| 9 | Mutation 治理链阶段归属 | 🟢 仅 Transaction + Data + Evidence，不提前实现 Policy/Decision/Agent/Execution/Verification | §5.1.1 规则 11 / §5.2.1 规则 7 / §5.3.1 规则 11（不变） | ✅ 已固化 |
+| 10 | Gate Review 流程确认 | 🟢 保持与 EV1-009 一致的 Gate Review 流程 | §13.3（本节） | ✅ 已固化 |
 
-3. **组织唯一性不变式粒度**：本 spec.md 定义组织唯一性为"同一 enterpriseId + 同一 parentId 下 code 唯一"，允许跨 parent 同 code（如不同部门下可有同名班组）。请大G项目经理确认此粒度是否符合业务预期，或要求"同一 enterpriseId 下 code 唯一"（更严格的全企业唯一）。
+## **13.2 关键裁决详情**
 
-4. **MoveOrganization 子树更新事务范围**：本 spec.md 定义 MoveOrganization 时子树所有后代 level 递归更新在同一事务内完成。若子树规模较大（如 1000+ 节点），同事务更新可能影响性能（P95 ≤800ms 目标）。请大G项目经理裁决：是否允许子树更新拆分为多个事务（最终一致），或坚持同事务原子（强一致但性能受限）。建议在 design.md 阶段裁决。
+### **裁决 #2：HAS_CHILD 边类型（🟡 保留为扩展边，Design 阶段定义 Contract）**
 
-5. **sourceEvidenceId 可空性**：本 spec.md 定义 sourceEvidenceId 在 CreateOrganization / UpdateOrganization / MoveOrganization 时可选（可空），与 EV1-009 一致。请大G项目经理确认是否要求 sourceEvidenceId 在所有 Mutation 时必填（更严格的 Evidence-First），或保持可选。
+**裁决结果**：HAS_CHILD 是 EV1-010 Organization Tree 扩展 Graph Edge，非 Canonical Graph Contract 的 8 类边之一（BELONGS_TO / TRADES_WITH / PRODUCES / USES_ASSET / EVIDENCED_BY / GOVERNED_BY / APPROVED_BY / DERIVED_FROM），也非 BELONGS_TO 的复用。
 
-6. **Organization 删除命令归属**：本 spec.md 明确排除 Organization 删除命令（Non-Scope 第 10 项），理由是组织单元为长生命周期对象，删除需级联校验 Person / 资产归属。请大G项目经理确认删除命令归属后续 EV，或要求在本 EV 实现。
+**Design 阶段需定义的 HAS_CHILD Contract 要素**：
+1. edgeType 枚举值（'HAS_CHILD'）
+2. source / target 节点类型约束（Organization → Organization）
+3. provenance 字段（sourceEvent / sourceEvidenceId）
+4. lifecycle 字段（validity='active' / 'inactive'）
+5. MoveOrganization 时旧边处理策略（直接删除或标记 validity='inactive' 软关闭）
+6. Event Replay 行为（Replay 时边的重建规则）
+7. 是否允许直接删除还是仅允许 validity='inactive' 软关闭
 
-7. **Organization 启用/停用状态机归属**：本 spec.md 明确排除 Organization 启用/停用状态机（Non-Scope 第 11 项）。请大G项目经理确认状态机归属后续 EV，或要求在本 EV 实现。
+**本 spec.md 仅定义业务语义**：HAS_CHILD 边表示组织树的父子层级关系，由 OrganizationCreated / OrganizationMoved 事件驱动创建/变更，禁止 Graph AI 推断（TASK-R06）。边类型契约的正式定义归属 design.md。
 
-8. **Physical Evidence 字段标准**：本 spec.md 引用 TASK-H07 Physical Evidence 最小字段标准，但未列出具体最小字段清单（已在 EV0 tasks.md 中定义）。请大G项目经理确认 EV1-010 Physical Evidence JSON 是否需在本 spec.md 中重复列出最小字段，或引用 EV0 tasks.md 即可。
+### **裁决 #3：Code 唯一性的 NULL 语义问题（🟢 保持 UNIQUE + Design 阶段处理 NULL 语义）**
 
-9. **Mutation 治理链阶段归属**：本 spec.md 定义 CreateOrganization / UpdateOrganization / MoveOrganization 走第一性原理链路的 Transaction + Data + Evidence 阶段，Policy / Decision / Agent / Execution / Verification 阶段归属 EV2。请大G项目经理确认 EV1-010 仅实现 Transaction + Data + Evidence 阶段，不提前实现 Policy/Agent 阶段。
+**裁决结果**：保持组织唯一性不变式为 UNIQUE(enterpriseId, parentId, code)，即同 Enterprise + 同 Parent + Code 唯一。
 
-10. **Gate Review 流程确认**：本 spec.md 完成后，需大G项目经理进行 EV1-010-SPEC Gate Review，裁决通过后方可进入 design.md（spec-design-agent）。请大G项目经理确认 Gate Review 流程与 EV1-009 一致。
+**Design 阶段必须处理的问题**：parentId IS NULL 时（根组织），PostgreSQL 默认 UNIQUE 约束的 NULL 语义将 NULL 值视为不相等，导致同企业下多个根组织（parentId IS NULL）可以拥有相同 code，违反组织唯一性不变式。
+
+**Design 阶段解决方案要求**：必须采用以下方案之一确保 parentId IS NULL 时 code 唯一性约束生效：
+- 方案 A：`UNIQUE NULLS NOT DISTINCT`（PostgreSQL 15+ 原生支持）
+- 方案 B：等价唯一索引方案，如 `CREATE UNIQUE INDEX ... ON business.organizations (enterprise_id, COALESCE(parent_id, '00000000-0000-0000-0000-000000000000'), code)`
+- 方案 C：部分索引 + CHECK 约束组合方案
+
+具体方案选择归属 design.md。
+
+### **裁决 #4：Move 子树事务（🟢 必须同事务原子）**
+
+**裁决结果**：保持 MoveOrganization 同事务原子更新整个子树 level，明确组织树结构属于强一致领域事实，不能拆分多事务最终一致。
+
+**理由**：组织树层级结构是企业内部管理的核心结构事实，level 不一致会导致组织归属查询错误、权限 RLS 上下文错误等严重问题。MoveOrganization 必须在单一 ACID 事务内原子完成整个子树的 level 更新，确保组织树结构强一致。这与 Gate Blocker #1 的修订一致——MoveOrganization 是跨聚合树结构协调操作，在单一 ACID 事务内原子维护组织树结构不变式。
+
+### **裁决 #5：sourceEvidenceId 可空性（🟢 可空，但 Mutation Evidence 必须存在）**
+
+**裁决结果**：保留 sourceEvidenceId 可空（optional），但必须区分两个概念：
+
+1. **Mutation Evidence（系统证据，mandatory）**：每次 Mutation 自身在 Evidence Ledger 中产生的记录，这是 Evidence-First 的必要条件，**必须强制存在**。由 Evidence Adapter 在同事务内写入 Evidence Ledger。
+2. **sourceEvidenceId（外部来源证据引用，optional）**：引用外部已有 Evidence 作为本次操作的来源依据，可以为空。不是 Evidence-First 的必要条件。
+
+**所有三个命令（Create/Update/Move）的 sourceEvidenceId 保持 optional**，但所有三个命令的 Mutation Evidence 必须强制存在。
+
+### **裁决 #8：Physical Evidence Schema（🟢 引用 EV0 TASK-H07，不重复定义）**
+
+**裁决结果**：本 spec.md 不重复定义 Physical Evidence Schema，改为引用 EV0 TASK-H07 当前冻结版本（EV0 tasks.md v1.2 §十一 Physical Evidence 统一最小字段标准，14 个最小字段）。
+
+**14 个最小字段**：execution_id / timestamp / environment / git_commit / test_command / actual_output / actual_metrics / database_state / event_id / evidence_id / trace_id / failure_injection_result / verification_result / verifier。
+
+EV1-010 的 Physical Evidence JSON 必须满足上述 14 个最小字段标准，Gate Review 时校验。
+
+## **13.3 Gate Review 流程确认（裁决 #10 固化）**
+
+本 spec.md v1.1 完成后，需大G项目经理进行 EV1-010-SPEC Gate Review v1.1，裁决通过后方可进入 design.md（spec-design-agent）。Gate Review 流程与 EV1-009 一致：
+1. 提交 spec.md v1.1 至大G项目经理体系
+2. 大G项目经理审查 spec.md v1.1，裁决 PASS / CONDITIONAL PASS / FAIL
+3. 若 PASS，授权 spec-design-agent 生成 design.md
+4. 若 CONDITIONAL PASS，列出待解决问题，修订 spec.md 至下一版本
+5. 若 FAIL，说明失败原因，重新修订 spec.md
+
+---
+
+# **14. 变更记录（Change Log）**
+
+## **v1.0 → v1.1（2026-09-09，解决 2 个 Gate Blocker + 固化 10 项 PM 裁决）**
+
+### **变更 1：Gate Blocker #1 — Aggregate Boundary Resolution（🔴 必须修订，已解决）**
+
+**问题**：v1.0 spec.md 一方面说 Organization 是独立聚合根，另一方面 MoveOrganization 要在同一事务中修改整个子树（所有后代 Organization 的 level），这突破了 R1"OrganizationAggregate 是 Organization 唯一 Mutation Root"。
+
+**解决方案**：
+1. **修订 R1 表述**（§8 硬约束 R1）：区分"自身属性 Mutation"和"树结构协调 Operation"。R1 修订为"OrganizationAggregate 是单个 Organization 自身业务属性（name / code / description 等）的唯一 Mutation Root；MoveOrganization 是跨 Aggregate 的树结构协调领域操作（Cross-Aggregate Tree Structural Coordination Operation），在单一 ACID 事务内原子更新整个子树的 level，维护组织树结构不变式。这不视为对其他 Aggregate 的'属性修改'，而是对树结构一致性的协调维护。"
+2. **新增领域术语**（§2）：Cross-Aggregate Tree Structural Coordination Operation、Tree Structural Property
+3. **明确 MoveOrganization 是跨聚合领域操作**（§5.3.1 规则 1 / 规则 8）：MoveOrganization 是 Cross-Aggregate Domain Operation，level 是树结构属性而非业务属性
+4. **明确 level 是树结构属性**（§6.1 level 字段）：level 是组织树结构属性，不是 Organization 的业务属性
+5. **新增 §10.3 Aggregate Boundary Resolution**：明确 Aggregate Root 的逻辑边界、MoveOrganization 的跨聚合操作语义、R1 的准确语义
+
+### **变更 2：Gate Blocker #2 — Evidence-First 与 sourceEvidenceId 语义矛盾（🔴 必须修订，已解决）**
+
+**问题**：v1.0 spec.md 多处说 Evidence-First 且每个 Mutation 必须有源证据支撑，但 sourceEvidenceId 又定义为可空，自相矛盾。
+
+**解决方案**：
+1. **区分两个概念**（§2 领域术语）：
+   - **Mutation Evidence（系统证据，mandatory）**：每次 Mutation 自身在 Evidence Ledger 中产生的记录，必须强制存在
+   - **sourceEvidenceId（外部来源证据引用，optional）**：引用外部已有 Evidence 作为本次操作的来源依据，可以为空
+2. **修订 sourceEvidenceId 定义**（§2 / §6.1）：明确 sourceEvidenceId 是外部来源证据引用，不是 Evidence-First 的必要条件
+3. **新增 Mutation Evidence 术语**（§2）：明确 Mutation Evidence 是 Evidence-First 的必要条件，必须强制存在
+4. **修订所有 Evidence-First 规则表述**（§5.1.1 规则 9 / §5.2.1 规则 5 / §5.3.1 规则 9）：将"每个 Mutation 必须有源证据支撑"修改为"每个 Mutation 必须在 Evidence Ledger 中产生 Evidence 记录（Mutation Evidence，mandatory）"
+
+### **变更 3：PM 裁决 #2 — HAS_CHILD 明确为扩展边类型（🟡 已固化）**
+
+**变更内容**：明确 HAS_CHILD 是 EV1-010 Organization Tree 扩展 Graph Edge，非 Canonical Graph Contract 8 类边之一，非 BELONGS_TO。Design 阶段需定义 HAS_CHILD 边的 Contract 要素（edgeType / source / target / provenance / lifecycle / Move 时旧边处理 / replay 行为 / 是否允许直接删除）。
+**变更位置**：§2 领域术语 HAS_CHILD 边 / §5.5.1 规则 4 / §13.2 裁决 #2
+
+### **变更 4：PM 裁决 #3 — Code 唯一性的 NULL 语义问题（🟡 已固化）**
+
+**变更内容**：保持 UNIQUE(enterpriseId, parentId, code)，明确 Design 阶段必须处理 parentId IS NULL 时 PostgreSQL UNIQUE 约束的 NULL 语义问题（需使用 UNIQUE NULLS NOT DISTINCT 或等价唯一索引方案）。
+**变更位置**：§6.1 code 字段 / §13.2 裁决 #3
+
+### **变更 5：PM 裁决 #4 — Move 子树事务（🟢 已固化）**
+
+**变更内容**：保持 MoveOrganization 同事务原子更新整个子树，明确组织树结构属于强一致领域事实，不能拆分多事务最终一致。
+**变更位置**：§5.3.1 规则 8 / §10.3.2 / §13.2 裁决 #4
+
+### **变更 6：PM 裁决 #8 — Physical Evidence Schema 引用（🟡 已固化）**
+
+**变更内容**：改为引用 EV0 TASK-H07 当前冻结版本（14 个最小字段标准），删除任何重复的 Physical Evidence Schema 定义。
+**变更位置**：§4.4 规则 1 / §7.3 规则 1 / §13.2 裁决 #8
+
+### **变更 7：§13 关键决策点全部固化为已裁决状态**
+
+**变更内容**：§13 关键决策点从"需大G项目经理审查"更新为"v1.1 已全部裁决固化"，新增 §13.1 已裁决决策点清单（10 项）+ §13.2 关键裁决详情 + §13.3 Gate Review 流程确认。
+
+### **保持不变的内容**
+
+- Scope / Non-Scope 不变
+- 28 条 Requirements 的编号不变（内容已修订 R1 / Evidence-First 相关表述）
+- 6 条 Hard Constraints 的编号不变（R1 内容已修订，R2-R6 不变）
+- 21 条 Acceptance Criteria 基本不变（Physical Evidence 相关表述已修订为引用 EV0 TASK-H07）
+- 领域边界声明 §10.1 / §10.2 不变（新增 §10.3）
+- 禁止事项 §11 不变
+- 依赖与产出 §12 不变
 
 ---
 
 > **文档结束**
-> 本 spec.md 定义 EBCX-EV1-010 Organization 聚合根的完整需求规格，覆盖业务背景与上下文、Scope/Non-Scope、组件定位、领域术语、角色边界、DFX 约束、核心能力（CreateOrganization / UpdateOrganization / MoveOrganization / Evidence+Outbox 同事务 / Neo4j 异步投影）、数据约束、验收标准、硬约束（R1-R6）、Requirement→Evidence 追踪矩阵、与 EV1-009 的领域边界声明、禁止事项、依赖产出、关键决策点共 13 项内容。
-> **下一步**：提交大G项目经理进行 EV1-010-SPEC Gate Review，裁决通过后由 spec-design-agent 生成 design.md。
+> 本 spec.md v1.1 定义 EBCX-EV1-010 Organization 聚合根的完整需求规格，覆盖业务背景与上下文、Scope/Non-Scope、组件定位、领域术语、角色边界、DFX 约束、核心能力（CreateOrganization / UpdateOrganization / MoveOrganization / Evidence+Outbox 同事务 / Neo4j 异步投影）、数据约束、验收标准、硬约束（R1-R6，R1 已修订）、Requirement→Evidence 追踪矩阵、与 EV1-009 的领域边界声明（含 §10.3 Aggregate Boundary Resolution）、禁止事项、依赖产出、关键决策点（10 项已全部裁决固化）、变更记录共 14 项内容。
+> **v1.1 相对 v1.0 的核心变更**：解决 2 个 Gate Blocker（Aggregate Boundary Resolution + Evidence/sourceEvidenceId 语义）+ 固化 10 项 PM 裁决。
+> **下一步**：提交大G项目经理进行 EV1-010-SPEC Gate Review v1.1，裁决通过后由 spec-design-agent 生成 design.md。
