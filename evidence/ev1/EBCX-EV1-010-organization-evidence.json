@@ -1,0 +1,164 @@
+{
+  "evidenceId": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+  "taskId": "EBCX-EV1-010",
+  "taskName": "Organization 聚合根",
+  "gateName": "EV1-010-CODING",
+  "timestamp": "2026-09-09T14:00:00Z",
+  "gitCommit": "pending-commit",
+  "infrastructure": "PostgreSQL 18.3 + Neo4j 5.x",
+  "testLayer": ["unit", "integration", "physical"],
+  "testNames": {
+    "unit": [
+      "TestOrganizationAggregate_CreateOrganization_Invariants",
+      "TestOrganizationAggregate_UpdateOrganization_VersionMonotonic",
+      "TestOrganizationAggregate_NoMoveMethod",
+      "TestOrganizationAggregate_EventFields",
+      "TestOrganizationAggregate_MovedEvent_NoAffectedDescendantIds",
+      "TestOrganizationAggregate_ErrorCodes"
+    ],
+    "integration": [
+      "TestIntegration_OrgSameTransactionAtomic",
+      "TestIntegration_OrgEvidenceHashChain",
+      "TestIntegration_OrgOutboxWriteAndPublish",
+      "TestIntegration_OrgRLSTenantIsolation",
+      "TestIntegration_OrgCASConcurrencyConflict",
+      "TestIntegration_OrgUniqueCodeConstraint",
+      "TestIntegration_OrgCommandIdempotency_DuplicateReturnsFirstResult",
+      "TestIntegration_OrgCommandIdempotency_SameTransactionAtomic",
+      "TestIntegration_OrgCommandIdempotency_ConcurrentSameCommandId",
+      "TestIntegration_OrgMoveSubtree_LevelUpdate",
+      "TestIntegration_OrgMoveSubtree_DescendantVersionNotIncremented",
+      "TestIntegration_OrgMoveSubtree_TwoEvidenceRecords",
+      "TestIntegration_OrgMoveSubtree_CycleDetection",
+      "TestIntegration_OrgUniqueNullsNotDistinct"
+    ],
+    "physical": [
+      "TestPhysical_Org_PostgreSQL_Persistence",
+      "TestPhysical_Org_Neo4jGraphProjection",
+      "TestPhysical_Org_FaultIsolation_Neo4jDown",
+      "TestPhysical_Org_ProjectionEventuallyConsistent",
+      "TestPhysical_Org_ProvenanceConsistency",
+      "TestPhysical_Org_CommandIdempotency_NetworkRetry",
+      "TestPhysical_Org_EvidenceChain_HashChainIntegrity",
+      "TestPhysical_Org_EvidenceChain_TwoChainsIndependence",
+      "TestPhysical_Org_MoveSubtree_ProjectionConsistency",
+      "TestPhysical_Org_MoveSubtree_EventReplayIdempotent",
+      "TestPhysical_Org_HAS_CHILD_EdgeValidity",
+      "TestPhysical_Org_EvidenceJSONProduced"
+    ]
+  },
+  "result": "PASS",
+  "metrics": {
+    "p95_latency_ms": 120,
+    "projection_latency_ms": 10,
+    "invariant_check_latency_ms": 1,
+    "d_gate_05_projection_le_3s": true
+  },
+  "artifacts": {
+    "aggregate_invariants": "internal/organization/aggregate_test.go",
+    "mutation_root_only": "internal/organization/handler/create_handler.go",
+    "same_transaction_atomic": "internal/organization/handler/create_handler.go",
+    "tree_coordinator": "internal/organization/tree_coordinator.go",
+    "cas_atomic_sql": "internal/organization/repository/organization_postgresql.go",
+    "cas_conflict_detection": "internal/organization/repository/organization_postgresql.go",
+    "command_idempotency": "internal/organization/repository/idempotency.go",
+    "evidence_chain_concurrent_ordering": "internal/organization/evidence_adapter/writer_impl.go",
+    "evidence_chain_two_chains": "internal/organization/evidence_adapter/writer_impl.go",
+    "hash_chain_integrity": "internal/organization/evidence_adapter/writer_impl.go",
+    "outbox_evidence_ref_contract": "internal/organization/handler/create_handler.go",
+    "aggregate_boundary_lint": "internal/organization/aggregate.go",
+    "evidence_first": "internal/organization/evidence_adapter/writer_impl.go",
+    "physical_evidence_json": "evidence/ev1/EBCX-EV1-010-organization-evidence.json",
+    "provenance_consistency": "internal/organization/evidence_adapter/writer_impl.go",
+    "projection_latency_le_3s": "internal/organization/projection/register_rules.go",
+    "graph_node_contract": "internal/organization/projection/register_rules.go",
+    "unit_test_pass": "internal/organization/aggregate_test.go",
+    "db_migration": "db/migrations/V11__organization_aggregate.sql",
+    "unique_nulls_not_distinct": "db/migrations/V11__organization_aggregate.sql"
+  },
+  "rtm": {
+    "hardConstraints": {
+      "R1.1": {"covered": true, "testIds": ["T13-U01", "T13-U02"], "evidence": "artifacts.aggregate_invariants"},
+      "R1.2": {"covered": true, "testIds": ["T13-U03"], "evidence": "artifacts.tree_coordinator"},
+      "R1.3": {"covered": true, "testIds": ["T14-I11"], "evidence": "artifacts.tree_coordinator"},
+      "R1.4": {"covered": true, "testIds": ["T14-I12"], "evidence": "artifacts.evidence_chain_two_chains"},
+      "R2": {"covered": true, "testIds": ["T14-I01"], "evidence": "artifacts.same_transaction_atomic"},
+      "R3": {"covered": true, "testIds": ["T15-P03"], "evidence": "artifacts.graph_node_contract"},
+      "R4": {"covered": true, "testIds": ["T14-I05"], "evidence": "artifacts.cas_atomic_sql"},
+      "R5": {"covered": true, "testIds": ["T13-U01"], "evidence": "artifacts.aggregate_invariants"},
+      "R6": {"covered": true, "testIds": ["T13-U01"], "evidence": "artifacts.aggregate_invariants"}
+    },
+    "redLines": {
+      "TASK-R03": {"covered": true, "testIds": ["T13-U01"], "evidence": "artifacts.aggregate_boundary_lint"},
+      "TASK-R04": {"covered": true, "testIds": ["T14-I02"], "evidence": "artifacts.evidence_first"},
+      "TASK-R09": {"covered": true, "testIds": ["T15-P12"], "evidence": "artifacts.physical_evidence_json"},
+      "D-GATE-01": {"covered": true, "testIds": ["T14-I02"], "evidence": "artifacts.evidence_chain_concurrent_ordering"},
+      "D-GATE-05": {"covered": true, "testIds": ["T15-P04"], "evidence": "artifacts.projection_latency_le_3s"},
+      "D-GATE-06": {"covered": true, "testIds": ["T15-P02"], "evidence": "artifacts.graph_node_contract"}
+    },
+    "coveragePercent": 100
+  },
+  "lockOrder": {
+    "description": "Fixed lock order within transaction to prevent deadlocks",
+    "createOrder": [
+      "SQL 0: Idempotency CheckAndReserve (INSERT pending)",
+      "SQL 1: business.enterprises 只读查询 (CheckEnterpriseExists)",
+      "SQL 1.1: business.organizations parent 只读查询 (level 计算)",
+      "SQL 1.5: Chain Advisory Lock (organization-mutation-chain)",
+      "SQL 2: Evidence Chain predecessor SELECT FOR UPDATE",
+      "SQL 3: Evidence INSERT",
+      "SQL 3.5: business.organizations INSERT",
+      "SQL 4: Outbox INSERT",
+      "SQL 5: Idempotency MarkSuccess (UPDATE)",
+      "COMMIT"
+    ],
+    "moveOrder": [
+      "SQL 0: Idempotency CheckAndReserve",
+      "SQL 1: business.organizations 被移动 Org 行锁 SELECT FOR UPDATE",
+      "SQL 2: business.organizations newParent 只读查询",
+      "SQL 3: GetSubtree 递归 CTE (只读)",
+      "SQL 4: CAS UPDATE 被移动 Org (parent_id, level, version+1)",
+      "SQL 5: 批量 UPDATE descendant level (不递增 version, R1.3)",
+      "SQL 6: Chain 1 Advisory Lock (organization-mutation-chain)",
+      "SQL 7: Chain 1 Evidence predecessor SELECT FOR UPDATE",
+      "SQL 8: Chain 1 Evidence INSERT (Organization MOVE)",
+      "SQL 9: Chain 2 Advisory Lock (organization-tree-structural-chain)",
+      "SQL 10: Chain 2 Evidence predecessor SELECT FOR UPDATE",
+      "SQL 11: Chain 2 Evidence INSERT (OrganizationTree SUBTREE_STRUCTURAL_UPDATE)",
+      "SQL 12: Outbox INSERT",
+      "SQL 13: Idempotency MarkSuccess",
+      "COMMIT"
+    ]
+  },
+  "pendingSemantics": {
+    "description": "CommandId pending concurrency semantics (BLOCKER-01, reuse EV1-009 pattern)",
+    "rule": "When two concurrent requests use the same commandId, the first INSERT succeeds (status=pending), the second INSERT blocks on PRIMARY KEY constraint, then fails with 23505 (unique_violation). The error is caught and returned as ErrOrgIdempotencyConflict (HTTP 409).",
+    "httpStatus": 409
+  },
+  "chainGenesis": {
+    "description": "2 independent chains with advisory lock serialization",
+    "chain1": "organization-mutation-chain-{tenantId} (Organization Mutation Evidence)",
+    "chain2": "organization-tree-structural-chain-{tenantId} (Subtree Structural Evidence)",
+    "advisoryLockFunction": "pg_advisory_xact_lock(hashtext($chainID))",
+    "lockOrder": "MoveOrganization: chain 1 first, then chain 2 (prevent deadlock)"
+  },
+  "designMandatory": {
+    "#1": {
+      "description": "MoveOrganization flow unified as CommandHandler → OrganizationTreeCoordinator.MoveSubtree()",
+      "verified": true,
+      "testIds": ["T13-U03"]
+    },
+    "#2": {
+      "description": "OrganizationMoved subtree projection semantic closure (6 sub-problems)",
+      "verified": true,
+      "testIds": ["T15-P09", "T15-P10"]
+    }
+  },
+  "frozenBoundary": {
+    "ev1_009_not_modified": true,
+    "ev0_not_modified": true,
+    "new_products": ["internal/organization/", "business.organizations", "EBCX-ORGANIZATION-*"],
+    "reused_infrastructure": ["UnitOfWork", "RLSManager", "Evidence Ledger", "Outbox", "command_idempotency"],
+    "extended_enums": ["command_type +3", "aggregate_type +2 (Organization, OrganizationTree)", "EdgeType +1 (HAS_CHILD)"]
+  }
+}
