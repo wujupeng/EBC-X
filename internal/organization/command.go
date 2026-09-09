@@ -13,6 +13,7 @@ type CreateOrganizationCommand struct {
 type UpdateOrganizationCommand struct {
 	CommandID        string
 	OrgID            string
+	TenantID         string
 	NewName          string
 	NewCode          string
 	ExpectedVersion  int64
@@ -22,6 +23,7 @@ type UpdateOrganizationCommand struct {
 type MoveOrganizationCommand struct {
 	CommandID        string
 	OrgID            string
+	TenantID         string
 	NewParentID      string
 	ExpectedVersion  int64
 	SourceEvidenceID string

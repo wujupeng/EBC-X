@@ -35,12 +35,12 @@ func (h *UpdateOrganizationHandler) Handle(ctx context.Context, cmd organization
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	tx, err := h.uow.BeginTenantTx(ctx, "")
+	tx, err := h.uow.BeginTenantTx(ctx, cmd.TenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin tenant tx: %w", err)
 	}
 
-	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, "", "UpdateOrganization", cmd.OrgID)
+	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, cmd.TenantID, "UpdateOrganization", cmd.OrgID)
 	if err != nil {
 		_ = h.uow.Rollback(tx)
 		if err == organization.ErrIdempotencyRecordFailed {
@@ -118,13 +118,13 @@ func (h *UpdateOrganizationHandler) Handle(ctx context.Context, cmd organization
 }
 
 func (h *UpdateOrganizationHandler) retryUpdate(ctx context.Context, cmd organization.UpdateOrganizationCommand) (*organization.OrganizationAggregate, error) {
-	tx, err := h.uow.BeginTenantTx(ctx, "")
+	tx, err := h.uow.BeginTenantTx(ctx, cmd.TenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer h.uow.Rollback(tx)
 
-	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, "", "UpdateOrganization", cmd.OrgID)
+	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, cmd.TenantID, "UpdateOrganization", cmd.OrgID)
 	if err != nil {
 		return nil, err
 	}

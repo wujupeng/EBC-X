@@ -3,7 +3,7 @@
   "taskId": "EBCX-EV1-010",
   "taskName": "Organization 聚合根",
   "gateName": "EV1-010-CODING",
-  "timestamp": "2026-09-09T14:00:00Z",
+  "timestamp": "2026-09-10T00:32:00Z",
   "gitCommit": "pending-commit",
   "infrastructure": "PostgreSQL 18.3 + Neo4j 5.x",
   "testLayer": ["unit", "integration", "physical"],
@@ -18,33 +18,33 @@
     ],
     "integration": [
       "TestIntegration_OrgSameTransactionAtomic",
-      "TestIntegration_OrgEvidenceHashChain",
-      "TestIntegration_OrgOutboxWriteAndPublish",
-      "TestIntegration_OrgRLSTenantIsolation",
-      "TestIntegration_OrgCASConcurrencyConflict",
       "TestIntegration_OrgUniqueCodeConstraint",
       "TestIntegration_OrgCommandIdempotency_DuplicateReturnsFirstResult",
-      "TestIntegration_OrgCommandIdempotency_SameTransactionAtomic",
+      "TestIntegration_OrgCASConcurrencyConflict",
+      "TestIntegration_OrgEvidenceHashChain",
+      "TestIntegration_OrgRLSTenantIsolation",
+      "TestIntegration_OrgOutboxWriteAndPublish",
+      "TestIntegration_OrgLevelEnforcement",
       "TestIntegration_OrgCommandIdempotency_ConcurrentSameCommandId",
-      "TestIntegration_OrgMoveSubtree_LevelUpdate",
-      "TestIntegration_OrgMoveSubtree_DescendantVersionNotIncremented",
-      "TestIntegration_OrgMoveSubtree_TwoEvidenceRecords",
-      "TestIntegration_OrgMoveSubtree_CycleDetection",
-      "TestIntegration_OrgUniqueNullsNotDistinct"
+      "TestIntegration_MoveSubtree_RecursiveUpdate",
+      "TestIntegration_MoveSubtree_SubtreeLevelValidation",
+      "TestIntegration_MoveSubtree_AtomicRollback",
+      "TestIntegration_MoveSubtree_TwoEvidenceSameTransaction",
+      "TestIntegration_MoveSubtree_DescendantVersionNotIncrement"
     ],
     "physical": [
-      "TestPhysical_Org_PostgreSQL_Persistence",
-      "TestPhysical_Org_Neo4jGraphProjection",
-      "TestPhysical_Org_FaultIsolation_Neo4jDown",
-      "TestPhysical_Org_ProjectionEventuallyConsistent",
-      "TestPhysical_Org_ProvenanceConsistency",
-      "TestPhysical_Org_CommandIdempotency_NetworkRetry",
-      "TestPhysical_Org_EvidenceChain_HashChainIntegrity",
-      "TestPhysical_Org_EvidenceChain_TwoChainsIndependence",
-      "TestPhysical_Org_MoveSubtree_ProjectionConsistency",
-      "TestPhysical_Org_MoveSubtree_EventReplayIdempotent",
-      "TestPhysical_Org_HAS_CHILD_EdgeValidity",
-      "TestPhysical_Org_EvidenceJSONProduced"
+      "TestPhysical_EvidenceHashChain_Integrity",
+      "TestPhysical_Neo4j_OrganizationNodeProjection",
+      "TestPhysical_Neo4j_BELONGS_TOEdgeProjection",
+      "TestPhysical_Neo4j_HAS_CHILDEdgeProjection",
+      "TestPhysical_Neo4j_FaultIsolation_EventuallyConsistent",
+      "TestPhysical_EvidenceJSON_Produced",
+      "TestPhysical_ProvenanceConsistency",
+      "TestPhysical_MoveSubtree_SubtreeProjectionConsistency",
+      "TestPhysical_MoveSubtree_EventReplayIdempotent",
+      "TestPhysical_Reconciliation_PGNeo4j",
+      "TestPhysical_MoveSubtree_HAS_CHILDEdgeConsistency",
+      "TestPhysical_UniqueCode_NULLS_NOT_DISTINCT"
     ]
   },
   "result": "PASS",
@@ -73,27 +73,31 @@
     "projection_latency_le_3s": "internal/organization/projection/register_rules.go",
     "graph_node_contract": "internal/organization/projection/register_rules.go",
     "unit_test_pass": "internal/organization/aggregate_test.go",
+    "integration_test_pass": "internal/organization/handler/move_handler_integration_test.go",
+    "physical_test_pass": "internal/organization/physical_test.go",
+    "tree_coordinator_adapter": "internal/organization/repository/tree_coordinator_adapter.go",
+    "evidence_tree_adapter": "internal/organization/evidence_adapter/tree_adapter.go",
     "db_migration": "db/migrations/V11__organization_aggregate.sql",
     "unique_nulls_not_distinct": "db/migrations/V11__organization_aggregate.sql"
   },
   "rtm": {
     "hardConstraints": {
-      "R1.1": {"covered": true, "testIds": ["T13-U01", "T13-U02"], "evidence": "artifacts.aggregate_invariants"},
-      "R1.2": {"covered": true, "testIds": ["T13-U03"], "evidence": "artifacts.tree_coordinator"},
-      "R1.3": {"covered": true, "testIds": ["T14-I11"], "evidence": "artifacts.tree_coordinator"},
-      "R1.4": {"covered": true, "testIds": ["T14-I12"], "evidence": "artifacts.evidence_chain_two_chains"},
-      "R2": {"covered": true, "testIds": ["T14-I01"], "evidence": "artifacts.same_transaction_atomic"},
-      "R3": {"covered": true, "testIds": ["T15-P03"], "evidence": "artifacts.graph_node_contract"},
+      "R1.1": {"covered": true, "testIds": ["T13-U01", "T13-U02", "T13-U08"], "evidence": "artifacts.aggregate_invariants"},
+      "R1.2": {"covered": true, "testIds": ["T13-U08", "T14-I06"], "evidence": "artifacts.tree_coordinator"},
+      "R1.3": {"covered": true, "testIds": ["T14-I14"], "evidence": "artifacts.tree_coordinator"},
+      "R1.4": {"covered": true, "testIds": ["T14-I13", "T15-P01"], "evidence": "artifacts.evidence_chain_two_chains"},
+      "R2": {"covered": true, "testIds": ["T14-I01", "T14-I08"], "evidence": "artifacts.same_transaction_atomic"},
+      "R3": {"covered": true, "testIds": ["T15-P05"], "evidence": "artifacts.graph_node_contract"},
       "R4": {"covered": true, "testIds": ["T14-I05"], "evidence": "artifacts.cas_atomic_sql"},
-      "R5": {"covered": true, "testIds": ["T13-U01"], "evidence": "artifacts.aggregate_invariants"},
+      "R5": {"covered": true, "testIds": ["T13-U01", "T14-I07"], "evidence": "artifacts.aggregate_invariants"},
       "R6": {"covered": true, "testIds": ["T13-U01"], "evidence": "artifacts.aggregate_invariants"}
     },
     "redLines": {
       "TASK-R03": {"covered": true, "testIds": ["T13-U01"], "evidence": "artifacts.aggregate_boundary_lint"},
-      "TASK-R04": {"covered": true, "testIds": ["T14-I02"], "evidence": "artifacts.evidence_first"},
-      "TASK-R09": {"covered": true, "testIds": ["T15-P12"], "evidence": "artifacts.physical_evidence_json"},
-      "D-GATE-01": {"covered": true, "testIds": ["T14-I02"], "evidence": "artifacts.evidence_chain_concurrent_ordering"},
-      "D-GATE-05": {"covered": true, "testIds": ["T15-P04"], "evidence": "artifacts.projection_latency_le_3s"},
+      "TASK-R04": {"covered": true, "testIds": ["T14-I03"], "evidence": "artifacts.evidence_first"},
+      "TASK-R09": {"covered": true, "testIds": ["T15-P06", "T15-P07"], "evidence": "artifacts.physical_evidence_json"},
+      "D-GATE-01": {"covered": true, "testIds": ["T14-I03"], "evidence": "artifacts.evidence_chain_concurrent_ordering"},
+      "D-GATE-05": {"covered": true, "testIds": ["T15-P05"], "evidence": "artifacts.projection_latency_le_3s"},
       "D-GATE-06": {"covered": true, "testIds": ["T15-P02"], "evidence": "artifacts.graph_node_contract"}
     },
     "coveragePercent": 100
@@ -146,12 +150,12 @@
     "#1": {
       "description": "MoveOrganization flow unified as CommandHandler → OrganizationTreeCoordinator.MoveSubtree()",
       "verified": true,
-      "testIds": ["T13-U03"]
+      "testIds": ["T13-U08", "T14-I06"]
     },
     "#2": {
       "description": "OrganizationMoved subtree projection semantic closure (6 sub-problems)",
       "verified": true,
-      "testIds": ["T15-P09", "T15-P10"]
+      "testIds": ["T15-P08", "T15-P09", "T15-P10", "T15-P11"]
     }
   },
   "frozenBoundary": {

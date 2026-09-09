@@ -41,17 +41,12 @@ func (h *MoveOrganizationHandler) Handle(ctx context.Context, cmd organization.M
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	existing, err := h.repo.FindByID(ctx, nil, cmd.OrgID, false)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := h.uow.BeginTenantTx(ctx, existing.TenantID)
+	tx, err := h.uow.BeginTenantTx(ctx, cmd.TenantID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin tenant tx: %w", err)
 	}
 
-	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, existing.TenantID, "MoveOrganization", cmd.OrgID)
+	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, cmd.TenantID, "MoveOrganization", cmd.OrgID)
 	if err != nil {
 		_ = h.uow.Rollback(tx)
 		if err == organization.ErrIdempotencyRecordFailed {
@@ -70,15 +65,13 @@ func (h *MoveOrganizationHandler) Handle(ctx context.Context, cmd organization.M
 		return nil, err
 	}
 
-	_ = subtreeResult
-
 	movedAgg, err := h.repo.FindByID(ctx, tx, cmd.OrgID, false)
 	if err != nil {
 		_ = h.uow.Rollback(tx)
 		return nil, err
 	}
 
-	if err := h.idemRepo.MarkSuccess(ctx, tx, cmd.CommandID, existing.TenantID, event.Version, event.EventID, ""); err != nil {
+	if err := h.idemRepo.MarkSuccess(ctx, tx, cmd.CommandID, cmd.TenantID, event.Version, event.EventID, subtreeResult.MutationEvidenceID); err != nil {
 		_ = h.uow.Rollback(tx)
 		return nil, err
 	}
@@ -91,18 +84,13 @@ func (h *MoveOrganizationHandler) Handle(ctx context.Context, cmd organization.M
 }
 
 func (h *MoveOrganizationHandler) retryMove(ctx context.Context, cmd organization.MoveOrganizationCommand) (*organization.OrganizationAggregate, error) {
-	existing, err := h.repo.FindByID(ctx, nil, cmd.OrgID, false)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := h.uow.BeginTenantTx(ctx, existing.TenantID)
+	tx, err := h.uow.BeginTenantTx(ctx, cmd.TenantID)
 	if err != nil {
 		return nil, err
 	}
 	defer h.uow.Rollback(tx)
 
-	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, existing.TenantID, "MoveOrganization", cmd.OrgID)
+	firstResult, err := h.idemRepo.CheckAndReserve(ctx, tx, cmd.CommandID, cmd.TenantID, "MoveOrganization", cmd.OrgID)
 	if err != nil {
 		return nil, err
 	}

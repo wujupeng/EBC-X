@@ -12,6 +12,8 @@ import (
 type SubtreeUpdateResult struct {
 	AffectedDescendantIDs []string
 	LevelDelta            int
+	MutationEvidenceID    string
+	StructuralEvidenceID  string
 }
 
 type OrganizationTreeCoordinator struct {
@@ -161,6 +163,8 @@ func (c *OrganizationTreeCoordinator) MoveSubtree(
 	result := &SubtreeUpdateResult{
 		AffectedDescendantIDs: descendantIDs,
 		LevelDelta:            levelDelta,
+		MutationEvidenceID:    evID,
+		StructuralEvidenceID:  structEvID,
 	}
 
 	return event, result, nil
