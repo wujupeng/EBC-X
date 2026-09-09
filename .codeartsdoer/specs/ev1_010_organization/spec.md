@@ -3,8 +3,8 @@
 > **项目：EBC-X — Enterprise Business & Industrial Operating System（企业与工业智能运营操作系统）**
 > **阶段：EV1 — Enterprise Core → EBCX-EV1-010 Organization 聚合根**
 > **任务编号：EBCX-EV1-010**
-> **文档版本：v1.1（解决 v1.0 CONDITIONAL PASS 的 2 个 Gate Blocker + 固化 10 项 PM 裁决，待大G项目经理 EV1-010-SPEC Gate Review v1.1）**
-> **状态：🟡 SPEC v1.1（待审查，已解决 Gate Blocker #1 Aggregate Boundary Resolution + Gate Blocker #2 Evidence/sourceEvidenceId 语义，已固化 10 项 PM 裁决）**
+> **文档版本：v1.2（在 v1.1 基础上完成 Aggregate Boundary Final Closure：新增 §10.4 MoveOrganization 跨聚合操作规范性条款 [Q1-Q4-NORM] + R1 最终修订拆分为 R1.1/R1.2/R1.3/R1.4，待大G项目经理 EV1-010-SPEC Gate Review v1.2）**
+> **状态：🟡 SPEC v1.2（待审查，已完成 Aggregate Boundary Final Closure：Mutation Authority + Version + Evidence 三者一致性闭环，v1.1 的 Gate Blocker #2 与 10 项 PM 裁决固化保持不变）**
 > **变更记录**：
 > - v1.0（2026-09-09）：首次生成，提交大G项目经理 EV1-010-SPEC Gate Review，裁决 CONDITIONAL PASS（2 个 Gate Blocker + 10 项裁决待固化）
 > - v1.1（2026-09-09）：解决 2 个 Gate Blocker + 固化 10 项 PM 裁决：
@@ -15,6 +15,10 @@
 >   - 🟢 裁决 #4（Move 子树事务）：明确组织树结构属于强一致领域事实，不可拆分多事务最终一致
 >   - 🟡 裁决 #8（Physical Evidence Schema）：改为引用 EV0 TASK-H07 当前冻结版本，不重复定义
 >   - 10 项 PM 裁决全部固化至 §13 关键决策点（已裁决状态）
+> - v1.2（2026-09-09）：Aggregate Boundary Final Closure（闭合 v1.1 未完全闭合的 Gate Blocker #1）：
+>   - 🔴 Gate Blocker #1 Final Closure：v1.1 已完成"概念层 Resolution"（引入 Cross-Aggregate Tree Structural Coordination Operation 术语），但未完成"Mutation Authority + Version + Evidence"三者一致性闭环。v1.2 新增 §10.4 MoveOrganization 跨聚合操作规范性条款，以 4 条不可歧义的规范性条款 [Q1-NORM / Q2-NORM / Q3-NORM / Q4-NORM] 明确回答：(Q1) Mutation Authority 是 OrganizationTreeCoordinator（Domain Service）；(Q2) descendant level 改变不属于 OrganizationAggregate State Mutation；(Q3) 被移动 Organization version 递增、descendant version 不递增；(Q4) 产生 2 条 Mutation Evidence（Organization MOVE + OrganizationTree SUBTREE_STRUCTURAL_UPDATE）
+>   - 🔴 R1 最终修订：基于 Q1-Q4 回答，R1 拆分为 R1.1（OrganizationAggregate 业务属性 Mutation Root）/ R1.2（OrganizationTreeCoordinator 结构状态 Mutation Authority）/ R1.3（descendant level 变更不经过 Aggregate Mutation 方法、不递增 version）/ R1.4（MoveOrganization Evidence 产生规则见 Q4-NORM）
+>   - 🟢 v1.1 已解决内容保持不变：Gate Blocker #2（Evidence/sourceEvidenceId 语义）、10 项 PM 裁决固化、HAS_CHILD 扩展边、Code 唯一性 NULL 语义、Move 子树事务强一致、Physical Evidence Schema 引用均不修改
 > **需求基线（不可变）**：
 > - `.codeartsdoer/specs/ebcx_ev0_arch/spec.md` v1.1（EV0-SPEC PASS / CLOSED / 🔒 FROZEN）
 > - `.codeartsdoer/specs/ebcx_ev0_arch/design.md` v1.1（EV0-DESIGN PASS / CLOSED / 🔒 FROZEN）
@@ -238,6 +242,30 @@ EV0 design.md D03 Enterprise Core 已锁定 Organization 聚合根的架构契�
 **Tree Structural Property（组织树结构属性）**
 : level 是组织树的结构属性，不是 Organization 的业务属性。level 的维护属于树结构一致性约束，由 MoveOrganization 跨聚合树结构协调操作统一维护，而非由单个 Organization Aggregate 自行管理。
 : 备注：v1.1 新增术语（Gate Blocker #1 解决方案）。区分"自身业务属性"（name / code / description 等，由 Organization Aggregate 自身 Mutation Root 管理）与"树结构属性"（level，由跨聚合树结构协调操作维护）。
+
+**OrganizationTreeCoordinator（组织树协调器，Domain Service）**
+: 一个领域服务（Domain Service），不是 Aggregate Root，拥有对组织树结构状态（Tree Structural State：所有 Organization 的 level 字段与被移动 Organization 的 parentId 字段）的跨聚合写权限。MoveOrganization 是该 Coordinator 的跨聚合树结构协调操作，由 OrganizationTreeCoordinator.MoveSubtree() 方法执行。该 Coordinator 不拥有对任何 OrganizationAggregate 业务属性（Business State：name、code、description）的写权限。
+: 备注：v1.2 新增术语（Gate Blocker #1 Final Closure，Q1-NORM）。OrganizationTreeCoordinator 是 Tree Structural State 的 Mutation Authority，与 OrganizationAggregate（Business State 的 Mutation Root）形成清晰的职责划分。该 Coordinator 在单一 PostgreSQL ACID 事务内原子更新整个子树的 level，不经过 descendant OrganizationAggregate 的 Mutation 方法。
+
+**Business State（业务状态）**
+: OrganizationAggregate 的业务属性集合，包括 name、code、description。Business State 的变更必须经过 OrganizationAggregate 自身的 Mutation 方法（CreateOrganization / UpdateOrganization），并通过 version-based CAS 保护。Business State 变更时 version 递增。
+: 备注：v1.2 新增术语（Gate Blocker #1 Final Closure，Q1-NORM / Q3-NORM）。Business State 由 OrganizationAggregate 管理，与 Tree Structural State（由 OrganizationTreeCoordinator 管理）形成状态分类。
+
+**Tree Structural State（组织树结构状态）**
+: 组织树的结构属性集合，包括所有 Organization 的 level 字段与 parentId 字段。Tree Structural State 的变更由 OrganizationTreeCoordinator（Domain Service）在 MoveSubtree() 操作中维护，不经过 OrganizationAggregate 的业务属性 Mutation 方法。
+: 备注：v1.2 新增术语（Gate Blocker #1 Final Closure，Q1-NORM / Q2-NORM）。Tree Structural State 由 OrganizationTreeCoordinator 管理，与 Business State（由 OrganizationAggregate 管理）形成状态分类。
+
+**Self Structural State Mutation（自身位置状态变更）**
+: 被移动 Organization 自身的 parentId 与 level 变更，属于该 Organization 自身的位置状态变更。Self Structural State Mutation 由 OrganizationTreeCoordinator.MoveSubtree() 通过 CAS UPDATE 执行（`UPDATE ... SET parent_id = ?, level = ?, version = version + 1 WHERE org_id = ? AND version = ?`），version 递增，受 R4 version-based CAS 保护。
+: 备注：v1.2 新增术语（Gate Blocker #1 Final Closure，Q3-NORM）。区分"自身位置状态变更"（被移动 Organization 的 parentId/level 变更，version 递增）与"被动结构状态变更"（descendant 的 level 变更，version 不递增）。
+
+**Passive Structural State Change（被动结构状态变更）**
+: descendant Organization 的 level 变更，由 OrganizationTreeCoordinator.MoveSubtree() 直接 SQL UPDATE 执行（`UPDATE business.organizations SET level = ... WHERE org_id IN (descendant_ids)`），不经过 descendant OrganizationAggregate 的任何 Mutation 方法，不递增 descendant 的 version。Passive Structural State Change 不属于 descendant OrganizationAggregate 的 State Mutation。
+: 备注：v1.2 新增术语（Gate Blocker #1 Final Closure，Q2-NORM / Q3-NORM）。这是 MoveOrganization 对子树 level 递归更新的语义分类——descendant 的 level 改变是被动的、由 Coordinator 协调引起的，不是 descendant 自身发起的 Mutation。
+
+**OrganizationTree（组织树，Evidence aggregateType）**
+: MoveOrganization 产生的第 2 条 Mutation Evidence 的 aggregateType 取值，标识子树结构变更证据。OrganizationTree 不是 Aggregate Root，而是 Evidence Ledger 中用于记录跨聚合树结构协调操作的结构变更证据的 aggregateType 分类。
+: 备注：v1.2 新增术语（Gate Blocker #1 Final Closure，Q4-NORM）。引入 OrganizationTree 作为 Evidence aggregateType，与 OrganizationTreeCoordinator 概念一致，用于记录 SUBTREE_STRUCTURAL_UPDATE 类型的结构变更证据。
 
 **tenantId（租户标识）**
 : Organization 聚合根所属的租户标识，通过 RLS 行级安全策略强制隔离，作为多租户场景下组织数据的归属与隔离依据。
@@ -973,11 +1001,14 @@ NEO4J --> CONSUMER : 投影成功
 
 # **8. 硬约束（Hard Constraints，NON-NEGOTIABLE RED LINES）**
 
-> 本节定义 EV1-010 的硬约束，对齐 EV1-009 的 R1/R2/R3/R4 四条硬约束，并新增 R5/R6 两条 Organization 专属硬约束。任一违反将导致 EV1-010-DESIGN Gate 直接 REJECT。
+> 本节定义 EV1-010 的硬约束，对齐 EV1-009 的 R1/R2/R3/R4 四条硬约束，并新增 R5/R6 两条 Organization 专属硬约束。v1.2 将 R1 最终修订拆分为 R1.1/R1.2/R1.3/R1.4（Aggregate Boundary Final Closure），R2-R6 保持不变。任一违反将导致 EV1-010-DESIGN Gate 直接 REJECT。
 
 | 约束编号 | 约束内容 | 落地机制 | 验收证据 |
 |---|---|---|---|
-| **R1** | **OrganizationAggregate 是单个 Organization 自身业务属性（name / code / description 等）的唯一 Mutation Root；MoveOrganization 是跨 Aggregate 的树结构协调领域操作（Cross-Aggregate Tree Structural Coordination Operation），在单一 ACID 事务内原子更新整个子树的 level，维护组织树结构不变式。这不视为对其他 Aggregate 的"属性修改"，而是对树结构一致性的协调维护。**（v1.1 修订，Gate Blocker #1 解决方案）** | (1) 自身属性 Mutation：OrganizationAggregate 封装全部自身属性 Mutation 入口（CreateOrganization / UpdateOrganization / MoveOrganization 对自身 parentId / version 的变更），外部仅通过 CommandHandler → Aggregate 路径，禁止绕过聚合根直接写 `business.organizations` 表自身属性；(2) 树结构协调 Operation：MoveOrganization 对子树 level 的递归更新是跨 Aggregate 树结构协调操作，level 是树结构属性（Tree Structural Property）而非业务属性，由 MoveOrganization 在单一 ACID 事务内原子维护，不视为对其他 Aggregate 自身业务属性的修改 | 编译期 lint + 代码评审 + Integration Test 子树 level 递归更新同事务原子验证 |
+| **R1.1** | **OrganizationAggregate 是单个 Organization 自身业务属性（Business State：name、code、description）的唯一 Mutation Root。业务属性的变更必须经过 OrganizationAggregate 的 Mutation 方法（CreateOrganization / UpdateOrganization），并通过 version-based CAS 保护。业务属性变更时 version 递增。**（v1.2 修订，Gate Blocker #1 Final Closure，Q1-NORM） | OrganizationAggregate 封装全部业务属性 Mutation 入口（CreateOrganization / UpdateOrganization），外部仅通过 CommandHandler → Aggregate 路径，禁止绕过聚合根直接写 `business.organizations` 表的 name / code / description 字段 | 编译期 lint + 代码评审 + Unit Test 业务属性 Mutation 入口校验 |
+| **R1.2** | **OrganizationTreeCoordinator（Domain Service）是组织树结构状态（Tree Structural State：level、parentId）的 Mutation Authority。MoveOrganization 是该 Coordinator 的跨聚合树结构协调操作，在单一 ACID 事务内原子更新整个子树的结构状态。被移动 Organization 的 parentId/level 变更与 version 递增由 Coordinator 通过 CAS UPDATE 执行（Self Structural State Mutation）；descendant 的 level 变更由 Coordinator 直接 SQL UPDATE 执行（Passive Structural State Change）。**（v1.2 修订，Gate Blocker #1 Final Closure，Q1-NORM / Q3-NORM） | OrganizationTreeCoordinator.MoveSubtree() 在单一 `*sql.Tx` 内：(1) CAS UPDATE 被移动 Organization 的 parent_id / level / version；(2) 直接 SQL UPDATE 所有 descendant 的 level；(3) 同事务写入 2 条 Evidence + 1 条 Outbox Event。Coordinator 不写任何 Organization 的 name / code / description | Integration Test 子树 level 递归更新同事务原子验证 + Unit Test Coordinator 不写业务属性验证 |
+| **R1.3** | **结构状态（level、parentId）的变更不经过 descendant OrganizationAggregate 的 Mutation 方法，不递增 descendant 的 version（详见 Q2-NORM、Q3-NORM）。descendant 的 level 变更属于被动结构状态变更（Passive Structural State Change），不属于 descendant OrganizationAggregate 的 State Mutation。**（v1.2 修订，Gate Blocker #1 Final Closure，Q2-NORM / Q3-NORM） | descendant level 变更路径：OrganizationTreeCoordinator.MoveSubtree() → `UPDATE business.organizations SET level = ... WHERE org_id IN (descendant_ids)`，不调用 descendant OrganizationAggregate 的任何 Mutation 方法，不递增 descendant version | Integration Test descendant version 不递增验证 + 代码评审 descendant Mutation 方法未被调用验证 |
+| **R1.4** | **MoveOrganization 的 Mutation Evidence 产生规则见 Q4-NORM：产生 2 条 Evidence（1 条针对被移动 Organization，aggregateType="Organization"，mutationType="MOVE"；1 条针对子树结构变更，aggregateType="OrganizationTree"，mutationType="SUBTREE_STRUCTURAL_UPDATE"），在同一 ACID 事务内原子写入 Evidence Ledger。**（v1.2 修订，Gate Blocker #1 Final Closure，Q4-NORM） | Evidence Adapter 在同事务内写入 2 条 evidence.Record 至 `evidence.evidence_ledger`：第 1 条 chain_id="organization-mutation-chain-{tenantId}"，第 2 条 chain_id="organization-tree-structural-chain-{tenantId}"，两条 CorrelationID 相同（同一 MoveOrganization 操作） | Integration Test 2 条 Evidence 同事务原子写入验证 + Physical Test Evidence Ledger 记录字段完整验证 |
 | **R2** | Idempotency + Organization + Evidence + Outbox 必须同一 ACID Transaction（四者原子） | UnitOfWork 在单一 `*sql.Tx` 内顺序执行：Idempotency Record 预留 → 聚合根状态写入 → Evidence Ledger INSERT → Outbox Event INSERT → Idempotency Record MarkSuccess → COMMIT，任一失败整体 ROLLBACK（对齐 EV1-009 R2） | Integration Test 同事务原子性验证 |
 | **R3** | Neo4j 永远不得进入 Organization Mutation 主事务 | 主事务（`*sql.Tx`）内仅访问 PostgreSQL；Neo4j 投影由独立 ProjectionConsumer 异步消费 Outbox Event，主事务 COMMIT 后才触发，Neo4j 故障不阻塞主事务（对齐 EV1-009 R3） | Physical Test Neo4j 故障隔离验证 |
 | **R4** | Update / Move 必须实现 version-based CAS 乐观并发控制 | UpdateOrganization / MoveOrganization 使用原子 SQL `UPDATE ... SET version = version + 1 WHERE id = ? AND version = ?`，通过 `affectedRows == 0` 判定 CONCURRENCY_CONFLICT，禁止 SELECT-then-UPDATE 非原子方案（对齐 EV1-009 R4） | Integration Test CAS 并发冲突验证 |
@@ -1109,6 +1140,109 @@ R1（Mutation Root）的准确语义修订为：
 - **R1 针对的是单个 Organization 的自身业务属性**（name / code / description 等），禁止绕过聚合根直接修改这些属性。
 - **R1 不限制树结构协调操作**（MoveOrganization 对子树 level 的维护），因为 level 是树结构属性而非业务属性。
 - **R1 不限制跨聚合树结构协调操作的事务范围**，MoveOrganization 在单一 ACID 事务内原子更新整个子树是 R2（ACID 事务）的体现，不违反 R1。
+
+> **v1.2 修订声明**：§10.3.3 的 R1 表述是 v1.1 的概念层 Resolution，v1.2 在此基础上完成了"Mutation Authority + Version + Evidence"三者一致性闭环，详见 §10.4 MoveOrganization 跨聚合操作规范性条款（4 条不可歧义的规范性条款）与 §8 R1 最终修订（R1.1/R1.2/R1.3/R1.4）。§10.3.3 的表述作为概念层背景保留，以 §10.4 的规范性条款与 §8 的 R1.1-R1.4 为最终裁决依据。
+
+## **10.4 MoveOrganization 跨聚合操作规范性条款（v1.2 新增，Gate Blocker #1 Final Closure）**
+
+> 本节以 4 条不可歧义的规范性条款（Normative Clause）明确回答 MoveOrganization 跨聚合操作的 4 个核心问题：Mutation Authority、descendant level Mutation 语义、descendant version 递增规则、multi-aggregate Evidence 语义。每条条款必须能被 Design/Coding 阶段直接引用，不允许模糊表述。4 条条款之间逻辑一致，且与 §8 R1.1/R1.2/R1.3/R1.4 完全一致。
+
+### **10.4.1 [Q1-NORM] Mutation Authority**
+
+**[Q1-NORM] MoveOrganization 的 Mutation Authority 是 OrganizationTreeCoordinator（Domain Service，领域服务）。**
+
+该 Authority 拥有以下写权限：
+1. 对组织树结构状态（Tree Structural State）的写权限，包括所有 Organization 的 level 字段与被移动 Organization 的 parentId 字段。
+2. 在单一 PostgreSQL ACID 事务内原子更新整个子树的 level 与被移动 Organization 的 parentId。
+3. MoveOrganization 命令的命令处理权（CommandHandler → OrganizationTreeCoordinator.MoveSubtree() 路径）。
+4. 被移动 Organization 的 version 递增权（通过 CAS UPDATE `UPDATE business.organizations SET parent_id = ?, level = ?, version = version + 1 WHERE org_id = ? AND version = ?` 执行，受 R4 version-based CAS 保护）。
+
+该 Authority 不拥有以下写权限：
+1. 对任何单个 OrganizationAggregate 的业务属性（Business State：name、code、description）的写权限——业务属性变更必须经过 OrganizationAggregate 自身的 Mutation 方法（CreateOrganization / UpdateOrganization）。
+2. 对 descendant Organization 的 version 字段的写权限——descendant version 不递增（详见 Q3-NORM）。
+
+**R1 的准确语义为**：详见 §8 R1.1 / R1.2 / R1.3 / R1.4。R1.1 定义 OrganizationAggregate 对 Business State 的 Mutation Root 权限；R1.2 定义 OrganizationTreeCoordinator 对 Tree Structural State 的 Mutation Authority 权限；R1.3 定义 descendant level 变更不经过 Aggregate Mutation 方法的语义；R1.4 定义 MoveOrganization 的 Evidence 产生规则。
+
+### **10.4.2 [Q2-NORM] descendant level Mutation 语义**
+
+**[Q2-NORM] descendant Organization 的 level 改变不属于 OrganizationAggregate 的 State Mutation。**
+
+level 是 Tree Structural State（组织树结构状态），由 OrganizationTreeCoordinator（Domain Service）在 MoveSubtree() 操作中维护。
+
+level 的变更路径为：OrganizationTreeCoordinator.MoveSubtree() → 直接 SQL UPDATE `business.organizations SET level = ... WHERE org_id IN (descendant_ids)`，在同一 PostgreSQL ACID 事务内原子完成。
+
+这不经过 descendant OrganizationAggregate 的任何 Mutation 方法（CreateOrganization / UpdateOrganization / MoveTo），因此不算 descendant OrganizationAggregate 的 State Mutation。descendant OrganizationAggregate 的 State Mutation 仅包括通过其自身 Mutation 方法执行的变更：
+- 业务属性变更（Business State Mutation：name / code / description 变更，通过 UpdateOrganization 执行）
+- 自身位置变更（Self Structural State Mutation：parentId / level 变更，通过 MoveOrganization 对被移动 Organization 执行）
+
+descendant 的 level 变更属于被动结构状态变更（Passive Structural State Change），由 Coordinator 协调引起，不是 descendant 自身发起的 Mutation，不记录在 descendant Organization 的 Mutation Evidence 中（详见 Q4-NORM）。
+
+### **10.4.3 [Q3-NORM] descendant version 递增规则**
+
+**[Q3-NORM] MoveOrganization 执行后，version 递增规则如下：**
+
+- **被移动 Organization（root of move）**：version 递增（version = oldVersion + 1，通过 CAS UPDATE 执行）。
+  - 理由：该 Organization 的 parentId 与 level 发生变更，属于该 Organization 自身的位置状态变更（Self Structural State Mutation），必须通过 version-based CAS 保护并发安全（R4）。被移动 Organization 的 version 递增由 OrganizationTreeCoordinator.MoveSubtree() 通过 CAS UPDATE 执行，记录在第 1 条 Mutation Evidence 中（aggregateType="Organization"，mutationType="MOVE"）。
+
+- **descendant Organization（level 改变但未被移动）**：version 不递增。
+  - 理由：descendant 的 level 改变不属于 descendant OrganizationAggregate 的 State Mutation（Q2-NORM = NO），由 OrganizationTreeCoordinator.MoveSubtree() 直接 SQL UPDATE 维护（Passive Structural State Change），不经过 descendant 的 Mutation 方法，因此 version 不需要递增。descendant 的 level 变更记录在第 2 条 Structural Mutation Evidence 中（aggregateType="OrganizationTree"，mutationType="SUBTREE_STRUCTURAL_UPDATE"），不记录在 descendant Organization 的 Mutation Evidence 中。
+
+**version 跟踪的状态范围为**：
+1. Organization 自身的业务状态变更（Business State：name、code、description，通过 UpdateOrganization 执行，version 递增）。
+2. Organization 自身的位置状态变更（Self Structural State：parentId、level，通过 MoveOrganization 对被移动 Organization 执行，version 递增）。
+3. **不包括**由 OrganizationTreeCoordinator 协调引起的被动 level 变更（Passive Structural State Change，即 descendant 的 level 变更，version 不递增）。
+
+### **10.4.4 [Q4-NORM] multi-aggregate Evidence 语义**
+
+**[Q4-NORM] MoveOrganization 的 Mutation Evidence 产生规则如下：**
+
+- **Evidence 产生模式**：方案 C（1 Operation → 1 Mutation Evidence for moved org + 1 Structural Mutation Evidence for subtree）。
+- **Evidence 条数**：2 条。
+- **每条 Evidence 的字段值**=：
+  - **第 1 条（被移动 Organization 的 Mutation Evidence）**：
+    - aggregateId = 被移动 Organization 的 orgId
+    - aggregateType = "Organization"
+    - mutationType = "MOVE"
+    - payload 含 orgId / enterpriseId / oldParentId / newParentId / oldLevel / newLevel / newVersion / tenantId / sourceEvidenceId
+    - evidenceType = "mandatory"
+    - chain_id = "organization-mutation-chain-{tenantId}"
+    - SequenceNo 在 organization-mutation-chain 内单调递增
+  - **第 2 条（子树结构变更的 Structural Mutation Evidence）**：
+    - aggregateId = 被移动 Organization 的 orgId（以被移动 Organization 为子树根标识）
+    - aggregateType = "OrganizationTree"
+    - mutationType = "SUBTREE_STRUCTURAL_UPDATE"
+    - payload 含 subtreeRootOrgId / affectedDescendantIds[] / oldLevelOffset / newLevelOffset / tenantId / sourceEvidenceId
+    - evidenceType = "mandatory"
+    - chain_id = "organization-tree-structural-chain-{tenantId}"
+    - SequenceNo 在 organization-tree-structural-chain 内单调递增
+- **两条 Evidence 的关联字段**：
+  - CorrelationID 相同（同一次 MoveOrganization 操作）
+  - CausationID 指向同一条 OrganizationMoved 领域事件
+  - 在同一 PostgreSQL ACID 事务内原子写入，任一失败整体 ROLLBACK
+- **与 EV1-009 Evidence 模型的兼容性**：
+  - 复用 EV1-003 Evidence Ledger 基础设施（`evidence.evidence_ledger` 表，append-only + Hash Chain + 四层纵深防御）
+  - 复用 `evidence.Record` 16 字段结构（EvidenceID / ChainID / SequenceNo / PreviousEvidenceHash / EvidenceHash / EvidenceType / Payload / SourceEventID / TransactionID / TenantID / Provenance / CorrelationID / CausationID / CreatedBy / CreatedAt / Version / LegalHold）
+  - 第 1 条 Evidence 与 EV1-009 的 Enterprise Mutation Evidence 结构完全一致（aggregateType = "Organization" vs "Enterprise"，仅 aggregateType 与 payload 内容不同）
+  - 第 2 条 Evidence 引入新的 aggregateType = "OrganizationTree"，这是 EV1-010 对 Evidence 模型的扩展（新增一个 aggregateType 枚举值），不修改 EV1-003 基础设施源码契约，仅扩展 aggregateType 取值范围
+  - 两条 Evidence 在各自 chain 内独立维护 Hash Chain（PreviousEvidenceHash 连续），不跨 chain 链接
+
+### **10.4.5 4 条规范性条款的逻辑一致性验证**
+
+4 条规范性条款之间逻辑一致，无矛盾：
+
+1. **Q1 ↔ Q2 一致性**：Q1 说 OrganizationTreeCoordinator 拥有对 Tree Structural State（level、parentId）的写权限，Q2 说 descendant 的 level 改变由 Coordinator 在 MoveSubtree() 中直接 SQL UPDATE，不经过 descendant 的 Mutation 方法。两者一致——Coordinator 拥有 level 的写权限，因此 descendant 的 level 改变由 Coordinator 执行，不算 descendant Aggregate 的 Mutation。
+
+2. **Q2 ↔ Q3 一致性**：Q2 说 descendant 的 level 改变不属于 Aggregate Mutation（NO），Q3 说 descendant version 不递增，理由是 level 改变不属于 Aggregate Mutation。两者完全一致——既然不算 Aggregate Mutation，version 就不需要递增。
+
+3. **Q1 ↔ Q3 一致性**：Q1 说 Coordinator 拥有 structural state 的写权限与被移动 Organization 的 version 递增权，Q3 说被移动 Organization 的 version 递增（自身位置变更，Self Structural State Mutation），descendant version 不递增（被动结构状态变更，Passive Structural State Change）。两者一致——被移动 Organization 的 parentId/level 改变是它自身的位置 Mutation（由 Coordinator 通过 CAS UPDATE 执行），version 递增；descendant 的 level 改变是被动协调，不递增 version。
+
+4. **Q3 ↔ Q4 一致性**：Q3 说被移动 Organization version 递增、descendant version 不递增，Q4 说产生 2 条 Evidence（第 1 条针对被移动 Organization 记录其自身 version 递增，第 2 条针对子树结构变更记录 descendant level 变更且不涉及 descendant version）。两者一致——被移动 Organization 的 Mutation Evidence 记录其自身 version 递增，子树结构变更的 Structural Mutation Evidence 记录 descendant level 变更（不涉及 descendant version）。
+
+5. **Q1 ↔ Q4 一致性**：Q1 说 Coordinator 是 structural state 的 Mutation Authority，Q4 说第 2 条 Evidence 的 aggregateType = "OrganizationTree"，与 Coordinator 概念一致。两者一致——Coordinator 维护 OrganizationTree 的结构状态，Evidence 以 OrganizationTree 为 aggregateType 记录结构变更。
+
+6. **Q2 ↔ Q4 一致性**：Q2 说 descendant level 改变不属于 Aggregate Mutation，Q4 说 descendant level 变更记录在 OrganizationTree 的 Structural Mutation Evidence 中（aggregateType="OrganizationTree"），而非 descendant Organization 的 Evidence（aggregateType="Organization"）。两者一致——descendant level 改变不属于 descendant Organization 的 Mutation，因此不记录在 descendant 的 Evidence 中，而是记录在 OrganizationTree 的结构变更 Evidence 中。
+
+7. **R1.1-R1.4 ↔ Q1-Q4 一致性**：R1.1 对应 Q1 中 OrganizationAggregate 的 Authority（Business State Mutation Root），R1.2 对应 Q1 中 Coordinator 的 Authority（Tree Structural State Mutation Authority）+ Q3 中被移动 Organization version 递增，R1.3 对应 Q2 + Q3 中 descendant level 变更不经过 Aggregate Mutation 方法、不递增 version，R1.4 对应 Q4 的 Evidence 产生规则。完全一致。
 
 ---
 
@@ -1250,6 +1384,44 @@ EV1-010 的 Physical Evidence JSON 必须满足上述 14 个最小字段标准�
 
 # **14. 变更记录（Change Log）**
 
+## **v1.1 → v1.2（2026-09-09，Aggregate Boundary Final Closure）**
+
+### **变更 1：Gate Blocker #1 Final Closure — Mutation Authority + Version + Evidence 三者一致性闭环（🔴 必须修订，已解决）**
+
+**问题**：v1.1 已完成"概念层 Resolution"（引入 Cross-Aggregate Tree Structural Coordination Operation 术语，将 level 称为"Tree Structural Property"），但尚未完成"Mutation Authority + Version + Evidence"三者的一致性闭环。v1.1 把 level 改名称为"Tree Structural Property"，但数据库里的持久化状态实际上发生了变化（`UPDATE business.organizations SET level = ...`），把字段改名称不会自动消除它属于 Aggregate State Mutation 的事实。PM 明确指出：不要做措辞修饰，而是把 4 个问题写成不可歧义的规范性条款。
+
+**解决方案**：
+1. **新增 §10.4 MoveOrganization 跨聚合操作规范性条款**：以 4 条不可歧义的规范性条款明确回答 4 个核心问题：
+   - [Q1-NORM] Mutation Authority 是 OrganizationTreeCoordinator（Domain Service），拥有 Tree Structural State 写权限，不拥有 Business State 写权限
+   - [Q2-NORM] descendant level 改变不属于 OrganizationAggregate State Mutation（NO），由 Coordinator 直接 SQL UPDATE，不经过 descendant Mutation 方法
+   - [Q3-NORM] 被移动 Organization version 递增（Self Structural State Mutation），descendant version 不递增（Passive Structural State Change）
+   - [Q4-NORM] 产生 2 条 Mutation Evidence（Organization MOVE + OrganizationTree SUBTREE_STRUCTURAL_UPDATE），方案 C
+2. **R1 最终修订**（§8 硬约束）：R1 拆分为 R1.1 / R1.2 / R1.3 / R1.4，与 Q1-Q4 完全一致
+3. **新增领域术语**（§2）：OrganizationTreeCoordinator、Business State、Tree Structural State、Self Structural State Mutation、Passive Structural State Change、OrganizationTree（Evidence aggregateType）
+4. **新增逻辑一致性验证**（§10.4.5）：验证 4 条条款之间 7 组一致性关系，确认无矛盾
+
+### **变更 2：R1 最终修订（🔴 已解决）**
+
+**变更内容**：R1 从 v1.1 的单条表述拆分为 R1.1 / R1.2 / R1.3 / R1.4：
+- R1.1：OrganizationAggregate 是 Business State（name、code、description）的唯一 Mutation Root
+- R1.2：OrganizationTreeCoordinator 是 Tree Structural State（level、parentId）的 Mutation Authority
+- R1.3：descendant level 变更不经过 Aggregate Mutation 方法、不递增 version
+- R1.4：MoveOrganization Evidence 产生规则见 Q4-NORM（2 条 Evidence）
+
+**变更位置**：§8 硬约束表格（R1 → R1.1/R1.2/R1.3/R1.4）
+
+### **保持不变的内容**
+
+- v1.1 已解决的 Gate Blocker #2（Evidence/sourceEvidenceId 语义）不变
+- v1.1 已固化的 10 项 PM 裁决不变（HAS_CHILD 扩展边、Code 唯一性 NULL 语义、Move 子树事务强一致、Physical Evidence Schema 引用等）
+- Scope / Non-Scope 不变
+- §1-§7、§9、§10.1-§10.3、§11-§13 内容不变（§10.3.3 新增 v1.2 修订声明指向 §10.4）
+- 28 条 Requirements 编号不变
+- R2-R6 硬约束不变
+- 21 条 Acceptance Criteria 不变
+- 禁止事项 §11 不变
+- 依赖与产出 §12 不变
+
 ## **v1.0 → v1.1（2026-09-09，解决 2 个 Gate Blocker + 固化 10 项 PM 裁决）**
 
 ### **变更 1：Gate Blocker #1 — Aggregate Boundary Resolution（🔴 必须修订，已解决）**
@@ -1312,6 +1484,6 @@ EV1-010 的 Physical Evidence JSON 必须满足上述 14 个最小字段标准�
 ---
 
 > **文档结束**
-> 本 spec.md v1.1 定义 EBCX-EV1-010 Organization 聚合根的完整需求规格，覆盖业务背景与上下文、Scope/Non-Scope、组件定位、领域术语、角色边界、DFX 约束、核心能力（CreateOrganization / UpdateOrganization / MoveOrganization / Evidence+Outbox 同事务 / Neo4j 异步投影）、数据约束、验收标准、硬约束（R1-R6，R1 已修订）、Requirement→Evidence 追踪矩阵、与 EV1-009 的领域边界声明（含 §10.3 Aggregate Boundary Resolution）、禁止事项、依赖产出、关键决策点（10 项已全部裁决固化）、变更记录共 14 项内容。
-> **v1.1 相对 v1.0 的核心变更**：解决 2 个 Gate Blocker（Aggregate Boundary Resolution + Evidence/sourceEvidenceId 语义）+ 固化 10 项 PM 裁决。
-> **下一步**：提交大G项目经理进行 EV1-010-SPEC Gate Review v1.1，裁决通过后由 spec-design-agent 生成 design.md。
+> 本 spec.md v1.2 定义 EBCX-EV1-010 Organization 聚合根的完整需求规格，覆盖业务背景与上下文、Scope/Non-Scope、组件定位、领域术语、角色边界、DFX 约束、核心能力（CreateOrganization / UpdateOrganization / MoveOrganization / Evidence+Outbox 同事务 / Neo4j 异步投影）、数据约束、验收标准、硬约束（R1.1-R1.4 + R2-R6，R1 已最终修订拆分）、Requirement→Evidence 追踪矩阵、与 EV1-009 的领域边界声明（含 §10.3 Aggregate Boundary Resolution + §10.4 MoveOrganization 跨聚合操作规范性条款）、禁止事项、依赖产出、关键决策点（10 项已全部裁决固化）、变更记录共 14 项内容。
+> **v1.2 相对 v1.1 的核心变更**：Aggregate Boundary Final Closure——新增 §10.4 MoveOrganization 跨聚合操作规范性条款（4 条不可歧义的规范性条款 [Q1-Q4-NORM]）+ R1 最终修订拆分为 R1.1/R1.2/R1.3/R1.4，完成 Mutation Authority + Version + Evidence 三者一致性闭环。
+> **下一步**：提交大G项目经理进行 EV1-010-SPEC Gate Review v1.2，裁决通过后由 spec-design-agent 生成 design.md。
