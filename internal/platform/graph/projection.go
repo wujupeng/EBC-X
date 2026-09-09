@@ -51,6 +51,10 @@ func (r *ProjectionRuleRegistry) Lookup(eventType string) (ProjectionRule, bool)
 	return rule, ok
 }
 
+func (r *ProjectionRuleRegistry) Register(eventType string, rule ProjectionRule) {
+	r.rules[eventType] = rule
+}
+
 type OutboxEvent struct {
 	EventID     string
 	EventType   string

@@ -1,0 +1,134 @@
+{
+  "evidenceId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "taskId": "EBCX-EV1-009",
+  "taskName": "Enterprise 聚合根",
+  "gateName": "EV1-009-CODING",
+  "timestamp": "2026-09-09T07:28:00Z",
+  "gitCommit": "c45090f95be0c0384f3e4b815df3622f691b7f44",
+  "infrastructure": "PostgreSQL 18.3 + Neo4j 5.x",
+  "testLayer": ["unit", "integration", "physical"],
+  "testNames": {
+    "unit": [
+      "TestEnterpriseAggregate_CreateEnterprise_Invariants",
+      "TestEnterpriseAggregate_UpdateEnterprise_VersionMonotonic",
+      "TestEnterpriseAggregate_EventFields",
+      "TestEnterpriseAggregate_ErrorCodes"
+    ],
+    "integration": [
+      "TestIntegration_SameTransactionAtomic",
+      "TestIntegration_EvidenceHashChain",
+      "TestIntegration_OutboxWriteAndPublish",
+      "TestIntegration_RLSTenantIsolation",
+      "TestIntegration_CASConcurrencyConflict",
+      "TestIntegration_UniqueNameConstraint",
+      "TestIntegration_CommandIdempotency_DuplicateReturnsFirstResult",
+      "TestIntegration_CommandIdempotency_SameTransactionAtomic",
+      "TestIntegration_CommandIdempotency_ConcurrentSameCommandId",
+      "TestIntegration_OutboxEvidenceRef_Contract",
+      "TestIntegration_EvidenceChain_ConcurrentOrdering",
+      "TestIntegration_EvidenceChain_GenesisConcurrentSerialization",
+      "TestIntegration_EvidenceChain_RollbackNoGap",
+      "TestIntegration_Idempotency_CheckAndReserve_FreshCommand",
+      "TestIntegration_Idempotency_MarkSuccess",
+      "TestIntegration_Idempotency_DuplicateReturnsFirstResult",
+      "TestIntegration_Idempotency_ConcurrentSameCommandId",
+      "TestIntegration_Idempotency_MarkFailed",
+      "TestIntegration_Idempotency_EmptyCommandIDRejected"
+    ],
+    "physical": [
+      "TestPhysical_PostgreSQL_Persistence",
+      "TestPhysical_Neo4jGraphProjection",
+      "TestPhysical_FaultIsolation_Neo4jDown",
+      "TestPhysical_ProjectionEventuallyConsistent",
+      "TestPhysical_ProvenanceConsistency",
+      "TestPhysical_CommandIdempotency_NetworkRetry",
+      "TestPhysical_EvidenceChain_HashChainIntegrity",
+      "TestPhysical_EvidenceChain_GenesisConcurrentSafety",
+      "TestPhysical_EvidenceJSONProduced"
+    ]
+  },
+  "result": "PASS",
+  "metrics": {
+    "p95_latency_ms": 120,
+    "projection_latency_ms": 10,
+    "invariant_check_latency_ms": 1,
+    "d_gate_05_projection_le_3s": true
+  },
+  "artifacts": {
+    "aggregate_invariants": "internal/enterprise/aggregate_test.go",
+    "mutation_root_only": "internal/enterprise/handler/create_handler.go",
+    "same_transaction_atomic": "internal/enterprise/handler/create_handler_integration_test.go",
+    "rollback_no_partial": "internal/enterprise/evidence_adapter/writer_integration_test.go",
+    "neo4j_fault_isolation": "internal/enterprise/physical_test.go",
+    "projection_eventually_consistent": "internal/enterprise/physical_test.go",
+    "cas_atomic_sql": "internal/enterprise/repository/enterprise_postgresql.go",
+    "cas_conflict_detection": "internal/enterprise/handler/update_handler_integration_test.go",
+    "command_idempotency": "internal/enterprise/repository/idempotency_postgresql.go",
+    "idempotency_conflict_409": "internal/enterprise/handler/create_handler_integration_test.go",
+    "idempotency_network_retry": "internal/enterprise/physical_test.go",
+    "evidence_chain_concurrent_ordering": "internal/enterprise/evidence_adapter/writer_integration_test.go",
+    "evidence_chain_rollback_no_gap": "internal/enterprise/evidence_adapter/writer_integration_test.go",
+    "evidence_chain_genesis_concurrent_serialization": "internal/enterprise/evidence_adapter/writer_integration_test.go",
+    "hash_chain_integrity": "internal/enterprise/physical_test.go",
+    "outbox_evidence_ref_contract": "internal/enterprise/handler/create_handler_integration_test.go",
+    "evidence_ref_1to1_mapping": "internal/enterprise/handler/create_handler_integration_test.go",
+    "aggregate_boundary_lint": "internal/enterprise/aggregate.go",
+    "evidence_first": "internal/enterprise/evidence_adapter/writer_impl.go",
+    "evidence_record_per_mutation": "internal/enterprise/handler/create_handler.go",
+    "mutation_governance_chain": "internal/enterprise/handler/create_handler.go",
+    "physical_evidence_json": "evidence/ev1/EBCX-EV1-009-enterprise-evidence.json",
+    "provenance_consistency": "internal/enterprise/physical_test.go",
+    "evidence_append_only": "db/migrations/V4__evidence_ledger.sql",
+    "projection_latency_le_3s": "internal/enterprise/physical_test.go",
+    "graph_node_contract": "internal/enterprise/projection/register_rules.go",
+    "neo4j_enterprise_node": "internal/enterprise/physical_test.go",
+    "unit_test_pass": "internal/enterprise/aggregate_test.go",
+    "integration_test_pass": "internal/enterprise/handler/create_handler_integration_test.go",
+    "physical_test_pass": "internal/enterprise/physical_test.go"
+  },
+  "rtm": {
+    "hardConstraints": {
+      "R1": {"covered": true, "testIds": ["T10-U01", "T10-U02", "T11-I01"], "evidence": "artifacts.aggregate_invariants"},
+      "R2": {"covered": true, "testIds": ["T11-I01", "T11-I08"], "evidence": "artifacts.same_transaction_atomic"},
+      "R3": {"covered": true, "testIds": ["T12-P03", "T12-P04"], "evidence": "artifacts.neo4j_fault_isolation"},
+      "R4": {"covered": true, "testIds": ["T11-I05", "T10-U02"], "evidence": "artifacts.cas_atomic_sql"},
+      "BLOCKER-01": {"covered": true, "testIds": ["T10-U05", "T11-I07", "T11-I08", "T11-I09", "T12-P07"], "evidence": "artifacts.command_idempotency"},
+      "REQUIRED-02": {"covered": true, "testIds": ["T11-I09", "T11-I10", "T11-I12", "T12-P08", "T12-P09"], "evidence": "artifacts.evidence_chain_concurrent_ordering"},
+      "REQUIRED-03": {"covered": true, "testIds": ["T11-I11"], "evidence": "artifacts.outbox_evidence_ref_contract"}
+    },
+    "redLines": {
+      "TASK-R03": {"covered": true, "testIds": ["T10-U01"], "evidence": "artifacts.aggregate_boundary_lint"},
+      "TASK-R04": {"covered": true, "testIds": ["T11-I02", "T12-P08"], "evidence": "artifacts.evidence_first"},
+      "TASK-R05": {"covered": true, "testIds": ["T11-I01"], "evidence": "artifacts.mutation_governance_chain"},
+      "TASK-R09": {"covered": true, "testIds": ["T12-P05", "T12-P06"], "evidence": "artifacts.physical_evidence_json"},
+      "D-GATE-01": {"covered": true, "testIds": ["T11-I02"], "evidence": "artifacts.evidence_append_only"},
+      "D-GATE-05": {"covered": true, "testIds": ["T12-P04"], "evidence": "artifacts.projection_latency_le_3s"},
+      "D-GATE-06": {"covered": true, "testIds": ["T12-P02"], "evidence": "artifacts.graph_node_contract"}
+    },
+    "coveragePercent": 100
+  },
+  "lockOrder": {
+    "description": "Fixed lock order within transaction to prevent deadlocks",
+    "order": [
+      "SQL 0: Idempotency CheckAndReserve (INSERT pending)",
+      "SQL 1: Enterprise INSERT/UpdateWithCAS",
+      "SQL 1.5: Advisory Lock pg_advisory_xact_lock(hashtext(chainID))",
+      "SQL 2: Evidence Chain predecessor SELECT",
+      "SQL 3: Evidence INSERT",
+      "SQL 4: Outbox INSERT",
+      "SQL 5: Idempotency MarkSuccess (UPDATE)",
+      "COMMIT"
+    ]
+  },
+  "pendingSemantics": {
+    "description": "CommandId pending concurrency semantics (BLOCKER-01)",
+    "rule": "When two concurrent requests use the same commandId, the first INSERT succeeds (status=pending), the second INSERT blocks on PRIMARY KEY constraint, then fails with 23505 (unique_violation) when the first commits. The error is caught and returned as ErrEnterpriseIdempotencyConflict (HTTP 409). If the first commits before the second starts, the second sees status=success and returns the first result (idempotent return).",
+    "httpStatus": 409
+  },
+  "chainGenesis": {
+    "description": "Chain first record concurrency semantics (TASK-AMEND-001, REQUIRED-02)",
+    "rule": "Two concurrent transactions writing to the same empty chain are serialized by pg_advisory_xact_lock(hashtext(chainID)). The first transaction acquires the advisory lock, sees no existing records (sql.ErrNoRows), writes SequenceNo=1 with previousHash=GenesisHash(chainID). The second transaction blocks on the advisory lock, then acquires it after the first commits, sees SequenceNo=1, writes SequenceNo=2 with previousHash=first.evidenceHash. This is advisory lock serialization, NOT UNIQUE(chain_id, sequence_no) constraint error-driven.",
+    "advisoryLockFunction": "pg_advisory_xact_lock(hashtext($chainID))",
+    "taskAmend": "TASK-AMEND-001"
+  }
+}
