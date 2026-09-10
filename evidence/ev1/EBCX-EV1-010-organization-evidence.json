@@ -1,10 +1,10 @@
 {
   "execution_id": "exec-ebcx-ev1-010-2026-09-10-gap-closure",
-  "timestamp": "2026-09-10T08:05:00Z",
+  "timestamp": "2026-09-10T08:35:00Z",
   "environment": "dev / Windows 11 x86_64, PostgreSQL 18.3 embedded, Neo4j 5.x bolt://localhost:7687",
-  "git_commit": "2a6584e",
+  "git_commit": "f92e561",
   "test_command": "go test -tags integration ./internal/organization/ -count=1 -timeout=180s && go test -tags integration ./internal/organization/handler/ -count=1 -timeout=120s && go test ./internal/organization/ -count=1",
-  "actual_output": "17 unit tests PASS, 14 integration tests PASS, 12 physical tests PASS (43/43 total PASS). P08~P11 now verify real production Projection/Reconciliation paths.",
+  "actual_output": "17 unit tests PASS, 14 integration tests PASS, 12 physical tests PASS (43/43 total PASS). P08~P11 verify real production Projection/Reconciliation paths. P09 verifies both in-process consumed map idempotency AND explicit replay idempotency (MERGE + absolute SET, Design §3.2.4).",
   "actual_metrics": {
     "unit_tests": 17,
     "integration_tests": 14,
@@ -21,7 +21,7 @@
   "evidence_id": "evidence.evidence_ledger: organization-mutation-chain + organization-tree-structural-chain (2 chains per tenant)",
   "trace_id": "trace-ebcx-ev1-010-gap-closure-001",
   "failure_injection_result": "Neo4j fault isolation verified (P05): main tx COMMIT succeeds with Neo4j down, outbox pending. Reconciliation mismatch injection verified (P10): level mismatch detected and repaired by ReconciliationEngine.",
-  "verification_result": "PASS - All 43 tests pass. G1-G6 blockers resolved: real MoveProjection (G1+G3), HAS_CHILD in Graph model (G2), Evidence payload with oldLevelOffset/newLevelOffset (G4), CorrelationID non-empty (G5), real ReconciliationEngine (G5), P08~P11 verify real production paths (G4), Evidence JSON conforms to TASK-H07 14 fields (G6).",
+  "verification_result": "PASS - All 43 tests pass at git_commit f92e561. G1-G6 blockers resolved: real MoveProjection (G1+G3), HAS_CHILD in Graph model (G2), Evidence payload with oldLevelOffset/newLevelOffset (G4), CorrelationID non-empty (G5), real ReconciliationEngine (G5), P08~P11 verify real production paths (G4), P09 verifies in-process + explicit replay idempotency (MERGE + absolute SET, Design §3.2.4), Evidence JSON conforms to TASK-H07 14 fields (G6). Provenance: git_commit=f92e561 is the verified code commit.",
   "verifier": "PhysicalTestSuite + IndependentPMReview",
   "taskId": "EBCX-EV1-010",
   "taskName": "Organization 聚合根",
