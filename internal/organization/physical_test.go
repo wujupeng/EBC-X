@@ -727,6 +727,7 @@ func TestPhysical_MoveSubtree_EventReplayIdempotent(t *testing.T) {
 	defer g.Close(context.Background())
 
 	proj := projection.NewOrganizationProjection(g, pgSuperDB)
+	moveProj := projection.NewMoveProjection(g, pgSuperDB)
 
 	tenantID := uuid.NewString()
 	entID := pgCreateEnterprise(t, tenantID)
@@ -756,26 +757,57 @@ func TestPhysical_MoveSubtree_EventReplayIdempotent(t *testing.T) {
 	lastEvent := moveEvents[len(moveEvents)-1]
 
 	ctx := context.Background()
+
+	result := proj.Consume(ctx, lastEvent)
+	if result.Err != nil {
+		t.Fatalf("first consume failed: %v", result.Err)
+	}
+	result2 := proj.Consume(ctx, lastEvent)
+	if result2.Err == nil {
+		t.Error("expected idempotency error on second consume via consumed map, got nil")
+	}
+
 	for i := 0; i < 3; i++ {
-		result := proj.Consume(ctx, lastEvent)
-		if i > 0 && result.Err == nil {
-			t.Errorf("expected idempotency error on replay %d, got nil", i)
+		replayResult, err := moveProj.ProjectMove(ctx, lastEvent)
+		if err != nil {
+			t.Fatalf("explicit replay %d failed: %v", i, err)
+		}
+		if replayResult.MovedNodeID == "" {
+			t.Errorf("replay %d returned empty MovedNodeID", i)
 		}
 	}
 
-	result, err := g.ExecuteQuery(ctx, `
+	pgBLevel := pgGetOrgLevel(t, b.OrgID)
+
+	nodeResult, err := g.ExecuteQuery(ctx, `
 		MATCH (n:Organization {entityId: $orgId})
-		RETURN count(n) as cnt
+		RETURN count(n) as cnt, n.level as level
 	`, map[string]any{"orgId": b.OrgID})
 	if err != nil {
-		t.Fatalf("failed to query: %v", err)
+		t.Fatalf("failed to query node: %v", err)
 	}
-	count, _ := result.Records[0].Get("cnt")
+	count, _ := nodeResult.Records[0].Get("cnt")
 	if count.(int64) != 1 {
-		t.Errorf("expected exactly 1 node after replay (idempotent), got %v", count)
+		t.Errorf("expected exactly 1 node after replay (MERGE idempotent), got %v", count)
+	}
+	neo4jLevel, _ := nodeResult.Records[0].Get("level")
+	if neo4jLevel.(int64) != int64(pgBLevel) {
+		t.Errorf("expected level=%d (absolute SET idempotent), got %v", pgBLevel, neo4jLevel)
 	}
 
-	t.Log("PASS: MoveSubtree event replay idempotent - real ProjectionConsumer idempotency via consumed map")
+	activeEdgeResult, err := g.ExecuteQuery(ctx, `
+		MATCH ()-[r:EDGE {edgeType: 'HAS_CHILD', tenantId: $tenantId, validity: 'active'}]->(to {entityId: $orgId})
+		RETURN count(r) as cnt
+	`, map[string]any{"tenantId": tenantID, "orgId": b.OrgID})
+	if err != nil {
+		t.Fatalf("failed to query active edges: %v", err)
+	}
+	activeCount, _ := activeEdgeResult.Records[0].Get("cnt")
+	if activeCount.(int64) != 1 {
+		t.Errorf("expected exactly 1 active HAS_CHILD edge after replay, got %v", activeCount)
+	}
+
+	t.Log("PASS: MoveSubtree event replay idempotent - in-process consumed map + explicit replay (MERGE + absolute SET)")
 }
 
 func TestPhysical_Reconciliation_PGNeo4j(t *testing.T) {
