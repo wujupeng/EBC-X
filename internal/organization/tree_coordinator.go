@@ -17,10 +17,10 @@ type SubtreeUpdateResult struct {
 }
 
 type OrganizationTreeCoordinator struct {
-	repo            TreeCoordinatorRepository
-	evWriter        TreeCoordinatorEvidenceWriter
-	structEvWriter  TreeCoordinatorStructuralEvidenceWriter
-	outbox          TreeCoordinatorOutbox
+	repo           TreeCoordinatorRepository
+	evWriter       TreeCoordinatorEvidenceWriter
+	structEvWriter TreeCoordinatorStructuralEvidenceWriter
+	outbox         TreeCoordinatorOutbox
 }
 
 type TreeCoordinatorRepository interface {
@@ -153,10 +153,10 @@ func (c *OrganizationTreeCoordinator) MoveSubtree(
 		return nil, nil, err
 	}
 
-	payload := []byte(fmt.Sprintf(`{"orgId":"%s","oldParentId":"%s","newParentId":"%s","oldLevel":%d,"newLevel":%d,"version":%d,"evidenceRef":"%s","structuralEvidenceRef":"%s"}`,
-		event.OrgID, event.OldParentID, event.NewParentID, event.OldLevel, event.NewLevel, event.Version, evID, structEvID))
+	payload := []byte(fmt.Sprintf(`{"orgId":"%s","oldParentId":"%s","newParentId":"%s","oldLevel":%d,"newLevel":%d,"version":%d,"evidenceRef":"%s","structuralEvidenceRef":"%s","correlationId":"%s","tenantId":"%s"}`,
+		event.OrgID, event.OldParentID, event.NewParentID, event.OldLevel, event.NewLevel, event.Version, evID, structEvID, event.EventID, existing.TenantID))
 
-	if err := c.outbox.Write(ctx, tx, "Organization", event.OrgID, "organization.moved", existing.TenantID, "", event.EventID, payload); err != nil {
+	if err := c.outbox.Write(ctx, tx, "Organization", event.OrgID, "organization.moved", existing.TenantID, event.EventID, event.EventID, payload); err != nil {
 		return nil, nil, ErrOutboxWriteFailed
 	}
 

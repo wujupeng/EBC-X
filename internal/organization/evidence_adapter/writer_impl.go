@@ -134,7 +134,7 @@ func NewOrganizationTreeStructuralEvidenceWriter(createdBy string) *Organization
 func (w *OrganizationTreeStructuralEvidenceWriterImpl) WriteStructural(
 	ctx context.Context, tx *sql.Tx, orgID string, tenantID string,
 	event organization.DomainEvent, mutationType string,
-	affectedDescendantIDs []string, levelDelta int,
+	affectedDescendantIDs []string, levelDelta int, oldLevel int, newLevel int,
 ) (*evidence.Record, error) {
 	chainID := fmt.Sprintf("organization-tree-structural-chain-%s", tenantID)
 
@@ -164,11 +164,13 @@ func (w *OrganizationTreeStructuralEvidenceWriterImpl) WriteStructural(
 
 	evidenceID := uuid.NewString()
 	payload := map[string]any{
-		"subtreeRootOrgId":       orgID,
-		"affectedDescendantIds":  affectedDescendantIDs,
-		"levelDelta":             levelDelta,
-		"mutationType":           mutationType,
-		"tenantId":               tenantID,
+		"subtreeRootOrgId":      orgID,
+		"affectedDescendantIds": affectedDescendantIDs,
+		"oldLevelOffset":        oldLevel,
+		"newLevelOffset":        newLevel,
+		"levelDelta":            levelDelta,
+		"mutationType":          mutationType,
+		"tenantId":              tenantID,
 	}
 	payloadBytes, _ := json.Marshal(payload)
 

@@ -69,7 +69,29 @@ var AllEdgeTypes = []EdgeType{
 	EdgeEvidencedBy, EdgeGovernedBy, EdgeApprovedBy, EdgeDerivedFrom,
 }
 
+const (
+	EdgeHasChild EdgeType = "HAS_CHILD"
+)
+
+var AllExtensionEdgeTypes = []EdgeType{
+	EdgeHasChild,
+}
+
 func IsValidEdgeType(t EdgeType) bool {
+	for _, e := range AllEdgeTypes {
+		if e == t {
+			return true
+		}
+	}
+	for _, e := range AllExtensionEdgeTypes {
+		if e == t {
+			return true
+		}
+	}
+	return false
+}
+
+func IsCanonicalEdgeType(t EdgeType) bool {
 	for _, e := range AllEdgeTypes {
 		if e == t {
 			return true
@@ -82,6 +104,7 @@ type EdgeValidity string
 
 const (
 	ValidityActive     EdgeValidity = "active"
+	ValidityInactive   EdgeValidity = "inactive"
 	ValiditySuperseded EdgeValidity = "superseded"
 	ValidityRetracted  EdgeValidity = "retracted"
 )

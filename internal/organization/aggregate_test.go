@@ -1,5 +1,6 @@
 package organization
 
+
 import (
 	"strings"
 	"testing"

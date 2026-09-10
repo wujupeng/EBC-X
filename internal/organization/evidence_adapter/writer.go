@@ -1,4 +1,3 @@
-
 package evidence_adapter
 
 import (
@@ -14,5 +13,5 @@ type OrganizationEvidenceWriter interface {
 }
 
 type OrganizationTreeStructuralEvidenceWriter interface {
-	WriteStructural(ctx context.Context, tx *sql.Tx, orgID string, tenantID string, event organization.DomainEvent, mutationType string, affectedDescendantIDs []string, levelDelta int) (*evidence.Record, error)
+	WriteStructural(ctx context.Context, tx *sql.Tx, orgID string, tenantID string, event organization.DomainEvent, mutationType string, affectedDescendantIDs []string, levelDelta int, oldLevel int, newLevel int) (*evidence.Record, error)
 }

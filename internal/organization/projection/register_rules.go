@@ -1,6 +1,5 @@
 package projection
 
-
 import (
 	"github.com/wujupeng/ebcx/internal/platform/graph"
 )

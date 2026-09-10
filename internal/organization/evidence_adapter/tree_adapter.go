@@ -37,7 +37,7 @@ func (a *TreeCoordinatorStructuralEvidenceWriterAdapter) WriteStructural(
 	ctx context.Context, tx *sql.Tx, orgID string, tenantID string,
 	event *organization.OrganizationMovedEvent, affectedDescendantIDs []string, levelDelta int,
 ) (string, error) {
-	record, err := a.writer.WriteStructural(ctx, tx, orgID, tenantID, event, "SubtreeStructuralUpdate", affectedDescendantIDs, levelDelta)
+	record, err := a.writer.WriteStructural(ctx, tx, orgID, tenantID, event, "SubtreeStructuralUpdate", affectedDescendantIDs, levelDelta, event.OldLevel, event.NewLevel)
 	if err != nil {
 		return "", err
 	}

@@ -11,12 +11,12 @@ import (
 )
 
 type MoveOrganizationHandler struct {
-	uow           repository.UnitOfWork
-	repo          repository.OrganizationRepository
-	evWriter      evidence_adapter.OrganizationEvidenceWriter
+	uow            repository.UnitOfWork
+	repo           repository.OrganizationRepository
+	evWriter       evidence_adapter.OrganizationEvidenceWriter
 	structEvWriter evidence_adapter.OrganizationTreeStructuralEvidenceWriter
-	idemRepo      repository.CommandIdempotencyRepository
-	coordinator   *organization.OrganizationTreeCoordinator
+	idemRepo       repository.CommandIdempotencyRepository
+	coordinator    *organization.OrganizationTreeCoordinator
 }
 
 func NewMoveOrganizationHandler(

@@ -23,6 +23,7 @@ import (
 	"github.com/wujupeng/ebcx/internal/organization"
 	"github.com/wujupeng/ebcx/internal/organization/evidence_adapter"
 	"github.com/wujupeng/ebcx/internal/organization/handler"
+	"github.com/wujupeng/ebcx/internal/organization/projection"
 	"github.com/wujupeng/ebcx/internal/organization/repository"
 	"github.com/wujupeng/ebcx/internal/platform/graph"
 	"github.com/wujupeng/ebcx/internal/platform/outbox"
@@ -54,7 +55,7 @@ func TestMain(m *testing.M) {
 			Database("ebcx_organization_physical").
 			Username("postgres").
 			Password("phytest").
-			StartTimeout(60*time.Second),
+			StartTimeout(60 * time.Second),
 	)
 	if err := pg.Start(); err != nil {
 		fmt.Printf("failed to start embedded postgres: %v\n", err)
@@ -226,6 +227,46 @@ func pgGetOrgLevel(t *testing.T, orgID string) int {
 		t.Fatalf("failed to get level: %v", err)
 	}
 	return level
+}
+
+func pgReadOutboxEvents(t *testing.T) []graph.OutboxEvent {
+	t.Helper()
+	rows, err := pgSuperDB.Query(`
+		SELECT event_id::text, event_type, aggregate_id::text, tenant_id::text, payload::text, created_at
+		FROM outbox.events
+		ORDER BY created_at
+	`)
+	if err != nil {
+		t.Fatalf("failed to read outbox events: %v", err)
+	}
+	defer rows.Close()
+
+	var events []graph.OutboxEvent
+	for rows.Next() {
+		var e graph.OutboxEvent
+		var payloadStr string
+		if err := rows.Scan(&e.EventID, &e.EventType, &e.AggregateID, &e.TenantID, &payloadStr, &e.OccurredAt); err != nil {
+			t.Fatalf("failed to scan outbox event: %v", err)
+		}
+		json.Unmarshal([]byte(payloadStr), &e.Payload)
+		if evRef, ok := e.Payload["evidenceRef"]; ok {
+			e.EvidenceID, _ = evRef.(string)
+		}
+		events = append(events, e)
+	}
+	return events
+}
+
+func pgProjectAllToNeo4j(t *testing.T, g *graph.RealNeo4jGraph, proj *projection.OrganizationProjection) {
+	t.Helper()
+	events := pgReadOutboxEvents(t)
+	ctx := context.Background()
+	for _, evt := range events {
+		result := proj.Consume(ctx, evt)
+		if result.Err != nil {
+			t.Fatalf("failed to project event %s (%s): %v", evt.EventID, evt.EventType, result.Err)
+		}
+	}
 }
 
 func TestPhysical_EvidenceHashChain_Integrity(t *testing.T) {
@@ -536,14 +577,14 @@ func TestPhysical_EvidenceJSON_Produced(t *testing.T) {
 	}
 
 	requiredFields := []string{
-		"evidenceId", "taskId", "taskName", "gateName", "timestamp",
-		"gitCommit", "infrastructure", "testLayer", "testNames",
-		"result", "metrics", "artifacts", "rtm",
-		"lockOrder", "pendingSemantics", "chainGenesis",
+		"execution_id", "timestamp", "environment", "git_commit",
+		"test_command", "actual_output", "actual_metrics", "database_state",
+		"event_id", "evidence_id", "trace_id", "failure_injection_result",
+		"verification_result", "verifier",
 	}
 	for _, field := range requiredFields {
 		if _, ok := data[field]; !ok {
-			t.Errorf("evidence JSON missing required field: %s", field)
+			t.Errorf("evidence JSON missing TASK-H07 required field: %s", field)
 		}
 	}
 
@@ -554,7 +595,7 @@ func TestPhysical_EvidenceJSON_Produced(t *testing.T) {
 		t.Errorf("expected infrastructure=PostgreSQL 18.3 + Neo4j 5.x, got %v", data["infrastructure"])
 	}
 
-	t.Log("PASS: Physical Evidence JSON produced with required fields")
+	t.Log("PASS: Physical Evidence JSON conforms to TASK-H07 14-field standard")
 }
 
 func TestPhysical_ProvenanceConsistency(t *testing.T) {
@@ -606,6 +647,8 @@ func TestPhysical_MoveSubtree_SubtreeProjectionConsistency(t *testing.T) {
 	g := pgSetupNeo4j(t)
 	defer g.Close(context.Background())
 
+	proj := projection.NewOrganizationProjection(g, pgSuperDB)
+
 	tenantID := uuid.NewString()
 	entID := pgCreateEnterprise(t, tenantID)
 
@@ -620,6 +663,8 @@ func TestPhysical_MoveSubtree_SubtreeProjectionConsistency(t *testing.T) {
 	cmdE := organization.CreateOrganizationCommand{CommandID: uuid.NewString(), EnterpriseID: entID, ParentID: d.OrgID, Name: "E", Code: "E001", TenantID: tenantID}
 	e, _ := pgCreateH.Handle(context.Background(), cmdE)
 
+	pgProjectAllToNeo4j(t, g, proj)
+
 	moveCmd := organization.MoveOrganizationCommand{
 		CommandID:       uuid.NewString(),
 		OrgID:           b.OrgID,
@@ -632,29 +677,21 @@ func TestPhysical_MoveSubtree_SubtreeProjectionConsistency(t *testing.T) {
 		t.Fatalf("move failed: %v", err)
 	}
 
+	moveEvents := pgReadOutboxEvents(t)
+	lastEvent := moveEvents[len(moveEvents)-1]
+	if lastEvent.EventType != "organization.moved" {
+		t.Fatalf("expected last event to be organization.moved, got %s", lastEvent.EventType)
+	}
+	result := proj.Consume(context.Background(), lastEvent)
+	if result.Err != nil {
+		t.Fatalf("failed to project move event: %v", result.Err)
+	}
+
 	pgBLevel := pgGetOrgLevel(t, b.OrgID)
 	pgCLevel := pgGetOrgLevel(t, c.OrgID)
 
 	ctx := context.Background()
-	for _, org := range []struct{ id string; level int }{{b.OrgID, pgBLevel}, {c.OrgID, pgCLevel}} {
-		node := graph.Node{
-			NodeID:           fmt.Sprintf("organization-%s", org.id),
-			NodeType:         graph.NodeOrganization,
-			EntityID:         org.id,
-			TenantID:         tenantID,
-			Version:          1,
-			Status:           "ACTIVE",
-			Source:           graph.SourceDomainEvent,
-			SourceEvidenceID: uuid.NewString(),
-			EvidenceRefs:     []string{uuid.NewString()},
-			Properties:       map[string]any{"level": org.level},
-		}
-		g.MergeNode(ctx, node)
-		g.ExecuteQuery(ctx, `MATCH (n:Organization {nodeId: $nodeId}) SET n.level = $level`,
-			map[string]any{"nodeId": node.NodeID, "level": org.level})
-	}
-
-	result, err := g.ExecuteQuery(ctx, `
+	neo4jResult, err := g.ExecuteQuery(ctx, `
 		MATCH (n:Organization {tenantId: $tenantId})
 		WHERE n.entityId IN $orgIds
 		RETURN n.entityId as entityId, n.level as level
@@ -663,7 +700,11 @@ func TestPhysical_MoveSubtree_SubtreeProjectionConsistency(t *testing.T) {
 		t.Fatalf("failed to query Neo4j nodes: %v", err)
 	}
 
-	for _, record := range result.Records {
+	if len(neo4jResult.Records) != 2 {
+		t.Fatalf("expected 2 nodes in Neo4j, got %d", len(neo4jResult.Records))
+	}
+
+	for _, record := range neo4jResult.Records {
 		entityId, _ := record.Get("entityId")
 		level, _ := record.Get("level")
 		var pgLevel int
@@ -672,18 +713,20 @@ func TestPhysical_MoveSubtree_SubtreeProjectionConsistency(t *testing.T) {
 		} else {
 			pgLevel = pgCLevel
 		}
-		if level != int64(pgLevel) {
+		if level.(int64) != int64(pgLevel) {
 			t.Errorf("Neo4j level mismatch for %s: neo4j=%v, pg=%d", entityId, level, pgLevel)
 		}
 	}
 
-	t.Log("PASS: MoveSubtree subtree projection consistency - Neo4j level matches PostgreSQL")
+	t.Log("PASS: MoveSubtree subtree projection consistency - real ProjectionConsumer → Neo4j level matches PostgreSQL")
 }
 
 func TestPhysical_MoveSubtree_EventReplayIdempotent(t *testing.T) {
 	pgCleanup(t)
 	g := pgSetupNeo4j(t)
 	defer g.Close(context.Background())
+
+	proj := projection.NewOrganizationProjection(g, pgSuperDB)
 
 	tenantID := uuid.NewString()
 	entID := pgCreateEnterprise(t, tenantID)
@@ -694,6 +737,8 @@ func TestPhysical_MoveSubtree_EventReplayIdempotent(t *testing.T) {
 	b, _ := pgCreateH.Handle(context.Background(), cmdB)
 	cmdD := organization.CreateOrganizationCommand{CommandID: uuid.NewString(), EnterpriseID: entID, Name: "ReplayD", Code: "RD001", TenantID: tenantID}
 	d, _ := pgCreateH.Handle(context.Background(), cmdD)
+
+	pgProjectAllToNeo4j(t, g, proj)
 
 	moveCmd := organization.MoveOrganizationCommand{
 		CommandID:       uuid.NewString(),
@@ -707,23 +752,14 @@ func TestPhysical_MoveSubtree_EventReplayIdempotent(t *testing.T) {
 		t.Fatalf("move failed: %v", err)
 	}
 
-	ctx := context.Background()
-	node := graph.Node{
-		NodeID:           fmt.Sprintf("organization-%s", b.OrgID),
-		NodeType:         graph.NodeOrganization,
-		EntityID:         b.OrgID,
-		TenantID:         tenantID,
-		Version:          2,
-		Status:           "ACTIVE",
-		Source:           graph.SourceDomainEvent,
-		SourceEvidenceID: uuid.NewString(),
-		EvidenceRefs:     []string{uuid.NewString()},
-		Properties:       map[string]any{"parent_id": d.OrgID, "level": 2},
-	}
+	moveEvents := pgReadOutboxEvents(t)
+	lastEvent := moveEvents[len(moveEvents)-1]
 
+	ctx := context.Background()
 	for i := 0; i < 3; i++ {
-		if err := g.MergeNode(ctx, node); err != nil {
-			t.Fatalf("replay %d failed: %v", i, err)
+		result := proj.Consume(ctx, lastEvent)
+		if i > 0 && result.Err == nil {
+			t.Errorf("expected idempotency error on replay %d, got nil", i)
 		}
 	}
 
@@ -736,16 +772,19 @@ func TestPhysical_MoveSubtree_EventReplayIdempotent(t *testing.T) {
 	}
 	count, _ := result.Records[0].Get("cnt")
 	if count.(int64) != 1 {
-		t.Errorf("expected exactly 1 node after replay (idempotent MERGE), got %v", count)
+		t.Errorf("expected exactly 1 node after replay (idempotent), got %v", count)
 	}
 
-	t.Log("PASS: MoveSubtree event replay idempotent - MERGE ensures idempotency")
+	t.Log("PASS: MoveSubtree event replay idempotent - real ProjectionConsumer idempotency via consumed map")
 }
 
 func TestPhysical_Reconciliation_PGNeo4j(t *testing.T) {
 	pgCleanup(t)
 	g := pgSetupNeo4j(t)
 	defer g.Close(context.Background())
+
+	proj := projection.NewOrganizationProjection(g, pgSuperDB)
+	reconciler := projection.NewReconciliationEngine(g, pgSuperDB)
 
 	tenantID := uuid.NewString()
 	entID := pgCreateEnterprise(t, tenantID)
@@ -762,61 +801,62 @@ func TestPhysical_Reconciliation_PGNeo4j(t *testing.T) {
 		t.Fatalf("create failed: %v", err)
 	}
 
+	pgProjectAllToNeo4j(t, g, proj)
+
 	ctx := context.Background()
-	node := graph.Node{
-		NodeID:           fmt.Sprintf("organization-%s", agg.OrgID),
-		NodeType:         graph.NodeOrganization,
-		EntityID:         agg.OrgID,
-		TenantID:         tenantID,
-		Version:          1,
-		Status:           "ACTIVE",
-		Source:           graph.SourceDomainEvent,
-		SourceEvidenceID: uuid.NewString(),
-		EvidenceRefs:     []string{uuid.NewString()},
-		Properties:       map[string]any{"level": agg.Level, "name": agg.Name},
-	}
-	g.MergeNode(ctx, node)
-
 	_, err = g.ExecuteQuery(ctx, `
-		MATCH (n:Organization {nodeId: $nodeId})
-		SET n.name = $name, n.level = $level
-	`, map[string]any{"nodeId": node.NodeID, "name": agg.Name, "level": agg.Level})
+		MATCH (n:Organization {entityId: $orgId})
+		SET n.level = $wrongLevel
+	`, map[string]any{"orgId": agg.OrgID, "wrongLevel": agg.Level + 100})
 	if err != nil {
-		t.Fatalf("failed to set node properties: %v", err)
+		t.Fatalf("failed to inject mismatch: %v", err)
 	}
 
-	var pgName string
-	var pgLevel int
-	pgSuperDB.QueryRow(`SELECT name, level FROM business.organizations WHERE org_id = $1`, agg.OrgID).Scan(&pgName, &pgLevel)
-
-	result, err := g.ExecuteQuery(ctx, `
-		MATCH (n:Organization {nodeId: $nodeId})
-		RETURN n.name as name, n.level as level
-	`, map[string]any{"nodeId": node.NodeID})
+	mismatches, err := reconciler.DetectMismatches(ctx, tenantID)
 	if err != nil {
-		t.Fatalf("failed to query Neo4j node: %v", err)
+		t.Fatalf("failed to detect mismatches: %v", err)
 	}
-	if len(result.Records) == 0 {
-		t.Fatalf("node not found in Neo4j")
-	}
-
-	neo4jName, _ := result.Records[0].Get("name")
-	if neo4jName != pgName {
-		t.Errorf("name mismatch: neo4j=%v, pg=%s (PG is source of truth)", neo4jName, pgName)
+	if len(mismatches) == 0 {
+		t.Fatal("expected mismatches to be detected, got none")
 	}
 
-	neo4jLevel, _ := result.Records[0].Get("level")
-	if int(neo4jLevel.(int64)) != pgLevel {
-		t.Errorf("level mismatch: neo4j=%v, pg=%d (PG is source of truth)", neo4jLevel, pgLevel)
+	foundLevelMismatch := false
+	for _, m := range mismatches {
+		if m.Type == projection.MismatchPropertyDiff && m.Property == "level" {
+			foundLevelMismatch = true
+		}
+	}
+	if !foundLevelMismatch {
+		t.Errorf("expected level property mismatch, got: %v", mismatches)
 	}
 
-	t.Log("PASS: Reconciliation PG↔Neo4j - PostgreSQL is source of truth")
+	actions, err := reconciler.Repair(ctx, tenantID)
+	if err != nil {
+		t.Fatalf("failed to repair: %v", err)
+	}
+	if len(actions) == 0 {
+		t.Fatal("expected repair actions, got none")
+	}
+
+	mismatchesAfter, err := reconciler.DetectMismatches(ctx, tenantID)
+	if err != nil {
+		t.Fatalf("failed to detect mismatches after repair: %v", err)
+	}
+	for _, m := range mismatchesAfter {
+		if m.Type == projection.MismatchPropertyDiff && m.EntityID == agg.OrgID {
+			t.Errorf("level mismatch still exists after repair: %v", m)
+		}
+	}
+
+	t.Log("PASS: Reconciliation PG↔Neo4j - real ReconciliationEngine detect + repair (PG is source of truth)")
 }
 
 func TestPhysical_MoveSubtree_HAS_CHILDEdgeConsistency(t *testing.T) {
 	pgCleanup(t)
 	g := pgSetupNeo4j(t)
 	defer g.Close(context.Background())
+
+	proj := projection.NewOrganizationProjection(g, pgSuperDB)
 
 	tenantID := uuid.NewString()
 	entID := pgCreateEnterprise(t, tenantID)
@@ -828,14 +868,22 @@ func TestPhysical_MoveSubtree_HAS_CHILDEdgeConsistency(t *testing.T) {
 	cmdD := organization.CreateOrganizationCommand{CommandID: uuid.NewString(), EnterpriseID: entID, Name: "EdgeD", Code: "ED001", TenantID: tenantID}
 	d, _ := pgCreateH.Handle(context.Background(), cmdD)
 
-	ctx := context.Background()
+	pgProjectAllToNeo4j(t, g, proj)
 
+	ctx := context.Background()
 	oldEdgeID := fmt.Sprintf("haschild-%s-%s", a.OrgID, b.OrgID)
-	_, err := g.ExecuteQuery(ctx, `
-		MERGE (e:EDGE_HAS_CHILD {edge_id: $edgeId, from_node: $fromNode, to_node: $toNode, tenant_id: $tenantId, validity: 'active', source: 'domain_event'})
-	`, map[string]any{"edgeId": oldEdgeID, "fromNode": fmt.Sprintf("organization-%s", a.OrgID), "toNode": fmt.Sprintf("organization-%s", b.OrgID), "tenantId": tenantID})
+	result, err := g.ExecuteQuery(ctx, `
+		MATCH ()-[r:EDGE {edgeId: $edgeId}]->()
+		RETURN r.validity as validity
+	`, map[string]any{"edgeId": oldEdgeID})
 	if err != nil {
-		t.Fatalf("failed to create old HAS_CHILD edge: %v", err)
+		t.Fatalf("failed to query old edge before move: %v", err)
+	}
+	if len(result.Records) > 0 {
+		oldValidity, _ := result.Records[0].Get("validity")
+		if oldValidity != "active" {
+			t.Errorf("expected old edge validity=active before move, got %v", oldValidity)
+		}
 	}
 
 	moveCmd := organization.MoveOrganizationCommand{
@@ -850,47 +898,45 @@ func TestPhysical_MoveSubtree_HAS_CHILDEdgeConsistency(t *testing.T) {
 		t.Fatalf("move failed: %v", err)
 	}
 
-	_, err = g.ExecuteQuery(ctx, `
-		MATCH (e:EDGE_HAS_CHILD {edge_id: $edgeId})
-		SET e.validity = 'inactive'
-	`, map[string]any{"edgeId": oldEdgeID})
-	if err != nil {
-		t.Fatalf("failed to deactivate old edge: %v", err)
-	}
-
-	newEdgeID := fmt.Sprintf("haschild-%s-%s", d.OrgID, b.OrgID)
-	_, err = g.ExecuteQuery(ctx, `
-		MERGE (e:EDGE_HAS_CHILD {edge_id: $edgeId, from_node: $fromNode, to_node: $toNode, tenant_id: $tenantId, validity: 'active', source: 'domain_event'})
-	`, map[string]any{"edgeId": newEdgeID, "fromNode": fmt.Sprintf("organization-%s", d.OrgID), "toNode": fmt.Sprintf("organization-%s", b.OrgID), "tenantId": tenantID})
-	if err != nil {
-		t.Fatalf("failed to create new HAS_CHILD edge: %v", err)
-	}
-
-	result, err := g.ExecuteQuery(ctx, `
-		MATCH (e:EDGE_HAS_CHILD {edge_id: $edgeId})
-		RETURN e.validity as validity
-	`, map[string]any{"edgeId": oldEdgeID})
-	if err != nil {
-		t.Fatalf("failed to query old edge: %v", err)
-	}
-	oldValidity, _ := result.Records[0].Get("validity")
-	if oldValidity != "inactive" {
-		t.Errorf("expected old edge validity=inactive, got %v", oldValidity)
+	moveEvents := pgReadOutboxEvents(t)
+	lastEvent := moveEvents[len(moveEvents)-1]
+	projResult := proj.Consume(ctx, lastEvent)
+	if projResult.Err != nil {
+		t.Fatalf("failed to project move event: %v", projResult.Err)
 	}
 
 	result, err = g.ExecuteQuery(ctx, `
-		MATCH (e:EDGE_HAS_CHILD {edge_id: $edgeId})
-		RETURN e.validity as validity
+		MATCH ()-[r:EDGE {edgeId: $edgeId}]->()
+		RETURN r.validity as validity
+	`, map[string]any{"edgeId": oldEdgeID})
+	if err != nil {
+		t.Fatalf("failed to query old edge after move: %v", err)
+	}
+	if len(result.Records) == 0 {
+		t.Fatal("old edge not found in Neo4j after move")
+	}
+	oldValidity, _ := result.Records[0].Get("validity")
+	if oldValidity != "inactive" {
+		t.Errorf("expected old edge validity=inactive after move, got %v", oldValidity)
+	}
+
+	newEdgeID := fmt.Sprintf("haschild-%s-%s", d.OrgID, b.OrgID)
+	result, err = g.ExecuteQuery(ctx, `
+		MATCH ()-[r:EDGE {edgeId: $edgeId}]->()
+		RETURN r.validity as validity
 	`, map[string]any{"edgeId": newEdgeID})
 	if err != nil {
 		t.Fatalf("failed to query new edge: %v", err)
+	}
+	if len(result.Records) == 0 {
+		t.Fatal("new edge not found in Neo4j after move")
 	}
 	newValidity, _ := result.Records[0].Get("validity")
 	if newValidity != "active" {
 		t.Errorf("expected new edge validity=active, got %v", newValidity)
 	}
 
-	t.Log("PASS: MoveSubtree HAS_CHILD edge consistency - old=inactive, new=active")
+	t.Log("PASS: MoveSubtree HAS_CHILD edge consistency - real Projection auto-deactivates old edge, creates new edge")
 }
 
 func TestPhysical_UniqueCode_NULLS_NOT_DISTINCT(t *testing.T) {
@@ -927,4 +973,3 @@ func TestPhysical_UniqueCode_NULLS_NOT_DISTINCT(t *testing.T) {
 
 	t.Log("PASS: UNIQUE NULLS NOT DISTINCT - parentId IS NULL, code uniqueness enforced")
 }
-

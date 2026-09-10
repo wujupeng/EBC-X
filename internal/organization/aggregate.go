@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	MaxNameLength  = 256
-	MaxCodeLength  = 64
-	MaxTreeLevel   = 5
+	MaxNameLength = 256
+	MaxCodeLength = 64
+	MaxTreeLevel  = 5
 )
 
 type OrganizationAggregate struct {
