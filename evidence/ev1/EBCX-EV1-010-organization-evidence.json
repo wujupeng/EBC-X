@@ -2,7 +2,7 @@
   "execution_id": "exec-ebcx-ev1-010-2026-09-10-gap-closure",
   "timestamp": "2026-09-10T08:05:00Z",
   "environment": "dev / Windows 11 x86_64, PostgreSQL 18.3 embedded, Neo4j 5.x bolt://localhost:7687",
-  "git_commit": "ab890ac",
+  "git_commit": "2a6584e",
   "test_command": "go test -tags integration ./internal/organization/ -count=1 -timeout=180s && go test -tags integration ./internal/organization/handler/ -count=1 -timeout=120s && go test ./internal/organization/ -count=1",
   "actual_output": "17 unit tests PASS, 14 integration tests PASS, 12 physical tests PASS (43/43 total PASS). P08~P11 now verify real production Projection/Reconciliation paths.",
   "actual_metrics": {
