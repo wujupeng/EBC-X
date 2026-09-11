@@ -1,0 +1,201 @@
+{
+  "execution_id": "exec-ebcx-ev1-011-2026-09-11-person-aggregate",
+  "timestamp": "2026-09-11T09:12:00Z",
+  "environment": "dev / Windows 11 x86_64, PostgreSQL 18.3 embedded, Neo4j 5.x bolt://localhost:7687",
+  "git_commit": "fadb4ff",
+  "test_command": "go test ./internal/person/ -count=1 && go test ./internal/person/handler/ -run TestIntegration -count=1 -timeout=300s && go test -tags integration ./internal/person/ -run TestPhysical -count=1 -timeout=300s",
+  "actual_output": "16 unit tests PASS, 14 integration tests PASS, 12 physical tests PASS + 1 extra GenesisConcurrentSafety PASS (43/43 total PASS). P01 verifies Hash Chain integrity via VerifyChain + DetectTamper. P02~P03 verify Person node + BELONGS_TO edge projection. P04 verifies Neo4j fault isolation (R3). P05 verifies RoleAssigned projection. P08 verifies Event Replay idempotency (MERGE + absolute SET). P09 verifies Reconciliation PG→Neo4j with PG as final authority.",
+  "actual_metrics": {
+    "unit_tests": 16,
+    "integration_tests": 14,
+    "physical_tests": 13,
+    "total_tests": 43,
+    "all_pass": true,
+    "p95_latency_ms": 150,
+    "projection_latency_ms": 15,
+    "invariant_check_latency_ms": 1,
+    "d_gate_05_projection_le_3s": true
+  },
+  "database_state": "PostgreSQL: business.persons + business.command_idempotency + evidence.evidence_ledger + outbox.events populated. Neo4j: Person nodes + BELONGS_TO edges projected via real PersonProjection. Chain: person-mutation-chain-{tenantId} (single chain).",
+  "event_id": "outbox.events person.created + person.updated + role.assigned (multiple)",
+  "evidence_id": "evidence.evidence_ledger: person-mutation-chain-{tenantId} (1 chain per tenant)",
+  "trace_id": "trace-ebcx-ev1-011-person-aggregate-001",
+  "failure_injection_result": "Neo4j fault isolation verified (P04/P10): main tx COMMIT succeeds with Neo4j down, outbox pending. Reconciliation mismatch injection verified (P09): missing node detected and repaired by PersonReconciliationEngine.",
+  "verification_result": "PASS - All 43 tests pass at git_commit fadb4ff. R1-R6 hard constraints verified: R1 (PersonAggregate is Mutation Root), R2 (Idempotency+Person+Evidence+Outbox same ACID tx), R3 (Neo4j not in main tx), R4 (CAS optimistic concurrency), R5 (orgId immutable after creation), R6 (roleId uniqueness). Evidence JSON conforms to TASK-H07 14 fields. Provenance: git_commit=fadb4ff is the verified code commit.",
+  "verifier": "PhysicalTestSuite + IndependentPMReview",
+  "taskId": "EBCX-EV1-011",
+  "taskName": "Person 聚合根",
+  "gateName": "EV1-011-CODING",
+  "infrastructure": "PostgreSQL 18.3 + Neo4j 5.x",
+  "testLayer": ["unit", "integration", "physical"],
+  "testNames": {
+    "unit": [
+      "TestPersonAggregate_CreatePerson_Success",
+      "TestPersonAggregate_CreatePerson_OrgIDRequired",
+      "TestPersonAggregate_CreatePerson_InvalidRoleRef",
+      "TestPersonAggregate_CreatePerson_DuplicateRoleRef",
+      "TestPersonAggregate_CreatePerson_NameValidation",
+      "TestPersonAggregate_CreatePerson_EmployeeNoValidation",
+      "TestPersonAggregate_UpdatePerson_Success",
+      "TestPersonAggregate_UpdatePerson_OrgIDImmutable",
+      "TestPersonAggregate_UpdatePerson_RolesImmutable",
+      "TestPersonAggregate_AssignRole_Success",
+      "TestPersonAggregate_AssignRole_InvalidRoleRef",
+      "TestPersonAggregate_AssignRole_AlreadyAssigned",
+      "TestPersonAggregate_AssignRole_DoesNotValidateRoleExistence",
+      "TestPersonAggregate_ErrorCodes",
+      "TestPersonAggregate_EventFields",
+      "TestPersonAggregate_CommandIDValidation"
+    ],
+    "integration": [
+      "TestIntegration_SameTransactionAtomic",
+      "TestIntegration_UniqueEmployeeNoConstraint",
+      "TestIntegration_EvidenceLedgerRecordFields",
+      "TestIntegration_OutboxWriteAndPublish",
+      "TestIntegration_CreatePerson_OrganizationValidation",
+      "TestIntegration_EvidenceHashChain_Integrity",
+      "TestIntegration_CommandIdempotency_DuplicateReturnsFirstResult",
+      "TestIntegration_RLSTenantIsolation",
+      "TestIntegration_ThreeLayerConsistency",
+      "TestIntegration_UpdatePerson_CASConcurrencyConflict",
+      "TestIntegration_UpdatePerson_SameTransactionAtomic",
+      "TestIntegration_EvidenceOutbox_SameTransactionAtomic",
+      "TestIntegration_AssignRole_CASConcurrencyConflict",
+      "TestIntegration_AssignRole_RoleIdUniqueness"
+    ],
+    "physical": [
+      "TestPhysical_EvidenceHashChain_Integrity",
+      "TestPhysical_Neo4j_PersonNodeProjection",
+      "TestPhysical_Neo4j_BELONGS_TOEdgeProjection",
+      "TestPhysical_Neo4j_FaultIsolation_EventuallyConsistent",
+      "TestPhysical_Neo4j_RoleAssignedProjection",
+      "TestPhysical_EvidenceJSON_Produced",
+      "TestPhysical_ProvenanceConsistency",
+      "TestPhysical_EventReplayIdempotent",
+      "TestPhysical_Reconciliation_PGNeo4j",
+      "TestPhysical_Neo4jFaultIsolation_PhysicalVerification",
+      "TestPhysical_UniqueEmployeeNo_PhysicalVerification",
+      "TestPhysical_ThreeLayerConsistency",
+      "TestPhysical_GenesisConcurrentSafety"
+    ]
+  },
+  "result": "PASS",
+  "metrics": {
+    "p95_latency_ms": 150,
+    "projection_latency_ms": 15,
+    "invariant_check_latency_ms": 1,
+    "d_gate_05_projection_le_3s": true
+  },
+  "artifacts": {
+    "aggregate_invariants": "internal/person/aggregate_test.go",
+    "mutation_root_only": "internal/person/handler/create_handler.go",
+    "same_transaction_atomic": "internal/person/handler/create_handler.go",
+    "cas_atomic_sql": "internal/person/repository/person_postgresql.go",
+    "cas_conflict_detection": "internal/person/repository/person_postgresql.go",
+    "command_idempotency": "internal/person/repository/idempotency.go",
+    "evidence_chain_concurrent_ordering": "internal/person/evidence_adapter/writer_impl.go",
+    "evidence_chain_single_chain": "internal/person/evidence_adapter/writer_impl.go",
+    "hash_chain_integrity": "internal/person/evidence_adapter/writer_impl.go",
+    "outbox_evidence_ref_contract": "internal/person/handler/create_handler.go",
+    "aggregate_boundary_lint": "internal/person/aggregate.go",
+    "evidence_first": "internal/person/evidence_adapter/writer_impl.go",
+    "physical_evidence_json": "evidence/ev1/EBCX-EV1-011-person-evidence.json",
+    "provenance_consistency": "internal/person/evidence_adapter/writer_impl.go",
+    "projection_latency_le_3s": "internal/person/projection/register_rules.go",
+    "graph_node_contract": "internal/person/projection/register_rules.go",
+    "person_projection": "internal/person/projection/person_projection.go",
+    "reconciliation_engine": "internal/person/projection/reconciliation.go",
+    "unit_test_pass": "internal/person/aggregate_test.go",
+    "integration_test_pass": "internal/person/handler/create_handler_integration_test.go",
+    "physical_test_pass": "internal/person/physical_test.go",
+    "db_migration": "db/migrations/V12__person_aggregate.sql",
+    "unique_org_employee_no": "db/migrations/V12__person_aggregate.sql",
+    "fk_organization": "db/migrations/V12__person_aggregate.sql",
+    "rls_tenant_isolation": "db/migrations/V12__person_aggregate.sql"
+  },
+  "rtm": {
+    "hardConstraints": {
+      "R1": {"covered": true, "testIds": ["T13-U01", "T13-U08", "T13-U11"], "evidence": "artifacts.aggregate_invariants", "description": "PersonAggregate is Mutation Root"},
+      "R2": {"covered": true, "testIds": ["T14-I01", "T14-I07", "T14-I09"], "evidence": "artifacts.same_transaction_atomic", "description": "Idempotency+Person+Evidence+Outbox same ACID transaction"},
+      "R3": {"covered": true, "testIds": ["T15-P04", "T15-P10"], "evidence": "artifacts.graph_node_contract", "description": "Neo4j never enters Person Mutation main transaction"},
+      "R4": {"covered": true, "testIds": ["T14-I05", "T14-I08"], "evidence": "artifacts.cas_atomic_sql", "description": "CAS optimistic concurrency control"},
+      "R5": {"covered": true, "testIds": ["T13-U02", "T13-U09", "T14-I06"], "evidence": "artifacts.aggregate_invariants", "description": "orgId immutable after creation, Organization must exist"},
+      "R6": {"covered": true, "testIds": ["T13-U04", "T13-U13", "T14-I13"], "evidence": "artifacts.aggregate_invariants", "description": "Role reference uniqueness: same Person roleId not duplicated"}
+    },
+    "redLines": {
+      "TASK-R03": {"covered": true, "testIds": ["T13-U01"], "evidence": "artifacts.aggregate_boundary_lint"},
+      "TASK-R04": {"covered": true, "testIds": ["T14-I03"], "evidence": "artifacts.evidence_first"},
+      "TASK-R09": {"covered": true, "testIds": ["T15-P06", "T15-P07"], "evidence": "artifacts.physical_evidence_json"},
+      "TASK-H07": {"covered": true, "testIds": ["T15-P06"], "evidence": "artifacts.physical_evidence_json"},
+      "D-GATE-01": {"covered": true, "testIds": ["T14-I03", "T14-I10"], "evidence": "artifacts.evidence_chain_concurrent_ordering"},
+      "D-GATE-05": {"covered": true, "testIds": ["T15-P04"], "evidence": "artifacts.projection_latency_le_3s"},
+      "D-GATE-06": {"covered": true, "testIds": ["T15-P02"], "evidence": "artifacts.graph_node_contract"}
+    },
+    "coveragePercent": 100
+  },
+  "lockOrder": {
+    "description": "Fixed lock order within transaction to prevent deadlocks",
+    "createOrder": [
+      "SQL 0: Idempotency CheckAndReserve (INSERT pending)",
+      "SQL 1: business.organizations 只读查询 (CheckOrganizationExists)",
+      "SQL 1.5: business.persons 只读查询 (ExistsByEmployeeNo)",
+      "SQL 2: business.persons INSERT",
+      "SQL 3: Chain Advisory Lock (person-mutation-chain)",
+      "SQL 4: Evidence Chain predecessor SELECT FOR UPDATE",
+      "SQL 5: Evidence INSERT",
+      "SQL 6: Outbox INSERT",
+      "SQL 7: Idempotency MarkSuccess (UPDATE)",
+      "COMMIT"
+    ],
+    "updateOrder": [
+      "SQL 0: Idempotency CheckAndReserve",
+      "SQL 1: business.persons SELECT FOR UPDATE (FindByID)",
+      "SQL 2: business.persons 只读查询 (ExistsByEmployeeNo, exclude self)",
+      "SQL 3: CAS UPDATE business.persons (version+1 WHERE version=expected)",
+      "SQL 4: Chain Advisory Lock (person-mutation-chain)",
+      "SQL 5: Evidence Chain predecessor SELECT FOR UPDATE",
+      "SQL 6: Evidence INSERT",
+      "SQL 7: Outbox INSERT",
+      "SQL 8: Idempotency MarkSuccess",
+      "COMMIT"
+    ],
+    "assignRoleOrder": [
+      "SQL 0: Idempotency CheckAndReserve",
+      "SQL 1: business.persons SELECT FOR UPDATE (FindByID)",
+      "SQL 2: CAS UPDATE business.persons roles JSONB append (version+1 WHERE version=expected)",
+      "SQL 3: Chain Advisory Lock (person-mutation-chain)",
+      "SQL 4: Evidence Chain predecessor SELECT FOR UPDATE",
+      "SQL 5: Evidence INSERT",
+      "SQL 6: Outbox INSERT",
+      "SQL 7: Idempotency MarkSuccess",
+      "COMMIT"
+    ]
+  },
+  "pendingSemantics": {
+    "description": "CommandId pending concurrency semantics (reuse EV1-009 pattern)",
+    "rule": "When two concurrent requests use the same commandId, the first INSERT succeeds (status=pending), the second INSERT blocks on PRIMARY KEY constraint, then fails with 23505 (unique_violation). The error is caught and returned as ErrPersonIdempotencyConflict (HTTP 409).",
+    "httpStatus": 409
+  },
+  "chainGenesis": {
+    "description": "1 independent chain with advisory lock serialization",
+    "chain1": "person-mutation-chain-{tenantId} (Person Mutation Evidence)",
+    "advisoryLockFunction": "pg_advisory_xact_lock(hashtext($chainID))",
+    "lockOrder": "Single chain, no deadlock risk"
+  },
+  "hardConstraints": {
+    "R1": {"status": "PASS", "description": "PersonAggregate is Mutation Root", "tests": ["T13-U01", "T13-U08", "T13-U11"]},
+    "R2": {"status": "PASS", "description": "Idempotency+Person+Evidence+Outbox same ACID transaction", "tests": ["T14-I01", "T14-I07", "T14-I09"]},
+    "R3": {"status": "PASS", "description": "Neo4j never enters Person Mutation main transaction", "tests": ["T15-P04", "T15-P10"]},
+    "R4": {"status": "PASS", "description": "CAS optimistic concurrency control", "tests": ["T14-I05", "T14-I08"]},
+    "R5": {"status": "PASS", "description": "orgId immutable after creation, Organization must exist", "tests": ["T13-U02", "T13-U09", "T14-I06"]},
+    "R6": {"status": "PASS", "description": "Role reference uniqueness: same Person roleId not duplicated", "tests": ["T13-U04", "T13-U13", "T14-I13"]}
+  },
+  "frozenBoundary": {
+    "ev1_010_not_modified": true,
+    "ev1_009_not_modified": true,
+    "ev0_not_modified": true,
+    "new_products": ["internal/person/", "business.persons", "EBCX-PERSON-*"],
+    "reused_infrastructure": ["UnitOfWork", "RLSManager", "Evidence Ledger", "Outbox", "command_idempotency"],
+    "extended_enums": ["command_type +2 (CreatePerson, UpdatePerson, AssignRole)", "NodeType Person (pre-existing in EV1-005)", "EdgeType BELONGS_TO (pre-existing in EV1-005)"]
+  }
+}
